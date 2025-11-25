@@ -1,5 +1,5 @@
 # LO4-SonTung-CNPM
-Tóm tắt nhanh — Hướng dẫn cho team
+Tóm tắt nhanh cái khung sườn
 
 **Mục đích**: Tài liệu ngắn gọn này tóm tắt các điểm cần lưu ý khi phát triển và tích hợp frontend/backend.
 
