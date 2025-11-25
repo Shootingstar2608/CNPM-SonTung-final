@@ -36,4 +36,3 @@ Tóm tắt nhanh — Hướng dẫn cho team
 - Backend: import `db`, dùng `require_role`, thêm model bằng `dataclass`, seed dữ liệu khi cần.
 - Frontend: gửi token trong header `Authorization`, gọi các endpoint auth để nhận token.
 
-Nếu bạn muốn, tôi có thể commit file này và/hoặc push lên remote — bạn muốn tôi thực hiện commit & push không?
