@@ -12,6 +12,7 @@ from core.models import (
     SyncStatus, SyncTypeEnum, AuthResult, SsoLogoutUrl, UserProfile, SchedulerConfig
 )
 from core.database import db
+from extensions import scheduler
 
 # Mock clients
 class MockDataCoreClient:
@@ -57,7 +58,7 @@ class MockDataCoreClient:
             "email": "thothanhquan@hcmut.edu.vn", 
             "role": "DEPARTMENT",
             "major": "",
-            "faculty": "Phòng Đào tạo",
+            "faculty": "Khoa KH&KT Máy tính",
             "phone": "0900000000",
             "address": "Trường ĐH Bách Khoa"
         }
@@ -102,34 +103,12 @@ class MockDataCoreClient:
 
 class HttpSSOClient:
     SSO_URL = "http://localhost:5001"
-
     def exchange_code_for_token(self, code: str):
         try:
-            print(f"[SSO Client] 🔄 Đang đổi code lấy token: {code}")
-            
-            response = requests.post(
-                f"{self.SSO_URL}/token", 
-                json={"code": code},
-                timeout=10
-            )
-            
-            print(f"[SSO Client] Trạng thái trả về: {response.status_code}")
-            
-            if response.status_code == 200:
-                user_info = response.json()
-                print(f"[SSO Client] Thành công! User: {user_info.get('name')}")
-                return user_info
-            
-            error_text = response.text
-            print(f"[SSO Client] Lỗi từ server: {error_text}")
-            raise Exception(f"Lỗi SSO: {error_text}")
-            
-        except requests.exceptions.ConnectionError:
-            raise Exception("Không kết nối được với SSO Server")
-        except requests.exceptions.Timeout:
-            raise Exception("SSO Server không phản hồi (Timeout)")
-        except Exception as e:
-            raise
+            resp = requests.post(f"{self.SSO_URL}/token", json={"code": code}, timeout=10)
+            if resp.status_code == 200: return resp.json()
+            raise Exception(f"SSO Error: {resp.text}")
+        except Exception as e: raise e
 
 # Exceptions
 class UserDataProcessingError(Exception): pass
@@ -143,37 +122,25 @@ class UserRepository:
     def update_or_create(self, user_data: dict):
         uid = user_data['id']
         if uid in db['users']:
-            current_user = db['users'][uid]
-            
-            db['users'][uid]['name'] = user_data['name']
-            db['users'][uid]['email'] = user_data['email']
-            print(f"[UserRepo] Đã cập nhật thông tin user: {uid}")
-            new_role = user_data.get('role')
-            if new_role and new_role != current_user['role']:
-                print(f"[UserRepo] Phát hiện thay đổi Role của {uid}: {current_user['role']} -> {new_role}")
-                current_user['role'] = new_role
+            current = db['users'][uid]
+            for field in ['name', 'email', 'major', 'faculty', 'phone', 'address']:
+                if user_data.get(field) and user_data.get(field) != current.get(field):
+                    current[field] = user_data.get(field)
+            print(f"[UserRepo] Đã cập nhật user {uid}")
         else:
             from core.database import create_user
             try:
-                create_user(
-                    name=user_data['name'],
-                    email=user_data['email'],
-                    password="default_password",
-                    role="PENDING"
-                )
-                print(f"[UserRepo] Đã tạo người dùng mới: {uid}")
-            except ValueError as e:
-                print(f"[UserRepo] Người dùng đã tồn tại: {uid}")
-                pass
+                create_user(**user_data, password="default_password")
+                print(f"[UserRepo] Đã tạo user mới {uid}")
+            except ValueError: pass
             
     def get_user_by_id(self, user_id: str) -> Optional[dict]:
         return db['users'].get(user_id)
 
 class RoleRepository:
     def update_or_create(self, role_data: dict):
-        rid = role_data['id']
-        db['roles'][rid] = role_data
-        print(f"[RoleRepo] Đã đồng bộ Role: {role_data['name']}")
+        db['roles'][role_data['id']] = role_data
+        
 # Services
 class DataSyncService:
     def __init__(self):
@@ -277,7 +244,6 @@ class DataSyncService:
     def _update_sync_status(self, type: SyncTypeEnum, report: SyncReport):
         self._sync_history[type] = report
 
-
 class AuthService:
     def __init__(self):
         self.sso_config = {
@@ -371,7 +337,6 @@ class SchedulerService:
 
     def get_config(self) -> SchedulerConfig:
         cfg = db['scheduler_config']['main']
-        from app import scheduler
         job = scheduler.get_job(self.JOB_ID)
         next_run = str(job.next_run_time) if job else "Chưa lên lịch"
         
@@ -387,18 +352,15 @@ class SchedulerService:
 
     def update_config(self, new_config: dict):
         current = db['scheduler_config']['main']
-        current['schedule_type'] = new_config.get('schedule_type', current['schedule_type'])
-        current['interval_minutes'] = new_config.get('interval_minutes', current['interval_minutes'])
-        current['run_time'] = new_config.get('run_time', current['run_time'])
-        current['day_value'] = new_config.get('day_value', current['day_value'])
+        for key in ['schedule_type', 'interval_minutes', 'run_time', 'day_value']:
+            if key in new_config:
+                current[key] = new_config[key]
         
         if current['is_active']:
             self.start_scheduler()
 
     def start_scheduler(self):
-        from app import scheduler
         cfg = db['scheduler_config']['main']
-        
         if scheduler.get_job(self.JOB_ID):
             scheduler.remove_job(self.JOB_ID)
             
@@ -412,10 +374,9 @@ class SchedulerService:
                 trigger='interval',
                 minutes=minutes
             )
-            print(f"[Scheduler] Đã BẬT: Chạy mỗi {minutes} phút.")
+            print(f"[Scheduler] 🟢 Đã BẬT: Chạy mỗi {minutes} phút.")
 
         elif sch_type == 'DAILY':
-            # Chạy hàng ngày vào giờ cụ thể
             time_str = cfg.get('run_time', "00:00")
             hour, minute = time_str.split(':')
             scheduler.add_job(
@@ -425,14 +386,12 @@ class SchedulerService:
                 hour=hour,
                 minute=minute
             )
-            print(f"[Scheduler] Đã BẬT: Chạy hàng ngày lúc {time_str}.")
+            print(f"[Scheduler] 🟢 Đã BẬT: Chạy hàng ngày lúc {time_str}.")
 
         elif sch_type == 'WEEKLY':
-            # Chạy hàng tuần vào thứ mấy
             time_str = cfg.get('run_time', "00:00")
             day_val = cfg.get('day_value', 'mon')
             hour, minute = time_str.split(':')
-            
             scheduler.add_job(
                 id=self.JOB_ID,
                 func='modules.integration.services:run_auto_sync_job',
@@ -441,14 +400,12 @@ class SchedulerService:
                 hour=hour,
                 minute=minute
             )
-            print(f"[Scheduler] Đã BẬT: Chạy hàng tuần ({day_val}) lúc {time_str}.")
+            print(f"[Scheduler] 🟢 Đã BẬT: Chạy hàng tuần ({day_val}) lúc {time_str}.")
             
         elif sch_type == 'MONTHLY':
-            # Chạy hàng tháng vào ngày mấy
             time_str = cfg.get('run_time', "00:00")
             day_val = cfg.get('day_value', '1') 
             hour, minute = time_str.split(':')
-            
             scheduler.add_job(
                 id=self.JOB_ID,
                 func='modules.integration.services:run_auto_sync_job',
@@ -457,15 +414,27 @@ class SchedulerService:
                 hour=hour,
                 minute=minute
             )
-            print(f"[Scheduler] Đã BẬT: Chạy ngày {day_val} hàng tháng lúc {time_str}.")
+            print(f"[Scheduler] 🟢 Đã BẬT: Chạy ngày {day_val} hàng tháng lúc {time_str}.")
 
         cfg['is_active'] = True
 
     def stop_scheduler(self):
-        from app import scheduler
         if scheduler.get_job(self.JOB_ID):
             scheduler.remove_job(self.JOB_ID)
         db['scheduler_config']['main']['is_active'] = False
-        print("[Scheduler] Đã TẮT đồng bộ tự động.")
+        print("[Scheduler] 🔴 Đã TẮT đồng bộ tự động.")
+
+def run_auto_sync_job():
+    print("\n[Scheduler] ⏰ Bắt đầu chạy Job đồng bộ tự động...")
+    from app import create_app
+    app = create_app(init_scheduler=False)
+
+    with app.app_context():
+        service = DataSyncService()
+        report = service.run_scheduled_personal_data_sync()
+        if 'scheduler_config' in db and 'main' in db['scheduler_config']:
+            db['scheduler_config']['main']['last_run'] = datetime.now().isoformat()
+            
+        print(f"[Scheduler] Kết quả: {report.status.value} - {report.message}\n")
         
         
