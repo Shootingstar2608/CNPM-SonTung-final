@@ -9,6 +9,9 @@ from modules.integration.auth_routes import bp as auth_bp
 # Import blueprint SCHEDULING (trỏ đúng vào folder bạn đang có)
 from modules.scheduling.routes import bp as scheduling_bp 
 
+# --- TÍN:blueprint cho library
+from modules.integration.library_routes import bp as library_bp 
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret')
@@ -19,6 +22,9 @@ def create_app():
     
     # --- VÀ DÒNG NÀY ---
     app.register_blueprint(scheduling_bp) 
+
+    # --- TÍN: ĐĂNG KÍ BLUEPRINT CHO LIBRARY 
+    app.register_blueprint(library_bp)
     
     return app
 
