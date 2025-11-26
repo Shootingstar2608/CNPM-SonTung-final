@@ -79,10 +79,29 @@ def update_scheduler_config():
         return jsonify({'error': 'Loại lịch không hợp lệ'}), 400
         
     scheduler_service.update_config(data)
-    
-    # Lấy lại config mới nhất để trả về
     new_conf = scheduler_service.get_config()
     return jsonify({
         'message': 'Cập nhật cấu hình thành công',
         'config': new_conf.to_dict()
     }), 200
+    
+    
+@bp.route('/scheduler/start', methods=['POST'])
+@require_role('ADMIN')
+def start_scheduler():
+    """Bật scheduler"""
+    try:
+        scheduler_service.start_scheduler()
+        return jsonify({'message': 'Scheduler đã được BẬT'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/scheduler/stop', methods=['POST'])
+@require_role('ADMIN')
+def stop_scheduler():
+    """Tắt scheduler"""
+    try:
+        scheduler_service.stop_scheduler()
+        return jsonify({'message': 'Scheduler đã được TẮT'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

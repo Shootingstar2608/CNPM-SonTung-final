@@ -15,23 +15,89 @@ from core.database import db
 
 # Mock clients
 class MockDataCoreClient:
+    DATACORE_DB = {
+        "u1": {
+            "name": "Đỗ Hồng Phúc", 
+            "email": "tutor@hcmut.edu.vn", 
+            "role": "TUTOR",
+            "major": "Khoa học Máy tính",
+            "faculty": "KH&KT Máy tính",
+            "phone": "0909123456",
+            "address": "Vũ Hán, Tàu Khựa"
+        },
+        "u2": {
+            "name": "Bùi Trần Duy Khang", 
+            "email": "student@hcmut.edu.vn", 
+            "role": "STUDENT",
+            "major": "Khoa học Máy tính",
+            "faculty": "KH&KT Máy tính",
+            "phone": "0123456789",
+            "address": "Dĩ An, Bình Dương"
+        },
+        "u3": {
+            "name": "Lê Trọng Tín", 
+            "email": "admin@hcmut.edu.vn", 
+            "role": "ADMIN",
+            "major": "",
+            "faculty": "Khoa KH&KT Máy tính",
+            "phone": "3663366336",
+            "address": "Đầu Ba Tổng Chín, Thanh Hóa"
+        },
+        "u4": {
+            "name": "Mai Đức Trung", 
+            "email": "mai.trung@hcmut.edu.vn", 
+            "role": "OFFICER",
+            "major": "",
+            "faculty": "Phòng Đào tạo",
+            "phone": "0900000000",
+            "address": "Trường ĐH Bách Khoa"
+        },
+        "u5": {
+            "name": "Quản Thành Thơ", 
+            "email": "thothanhquan@hcmut.edu.vn", 
+            "role": "DEPARTMENT",
+            "major": "",
+            "faculty": "Phòng Đào tạo",
+            "phone": "0900000000",
+            "address": "Trường ĐH Bách Khoa"
+        }
+    }
+
     def fetch_user_profiles(self, user_ids: List[str]):
-        print(f"[MockDataCore] Đang lấy thông tin profile cho: {user_ids}")
+        print(f"[MockDataCore] Đang trích xuất hồ sơ chi tiết cho: {user_ids}")
         results = []
         for uid in user_ids:
-            results.append({
-                "id": uid, 
-                "name": f"User {uid} (Đã Sync)", 
-                "email": f"{uid}@hcmut.edu.vn"
-            })
+            if uid in self.DATACORE_DB:
+                results.append({ "id": uid, **self.DATACORE_DB[uid] })
+            else:
+                results.append({
+                    "id": uid, "name": f"User {uid}", "email": f"{uid}@hcmut.edu.vn", "role": "PENDING"
+                })
         return results
 
     def fetch_all_roles(self):
-        print(f"[MockDataCore] Đang lấy danh sách Roles & Permissions")
+        print(f"[MockDataCore] 📥 Đang lấy định nghĩa 5 Roles & Permissions")
         return [
-            {"id": "R_ADMIN", "name": "ADMIN", "perms": ["MANAGE_USER", "VIEW_LOGS", "SYNC_DATA"]},
-            {"id": "R_TUTOR", "name": "TUTOR", "perms": ["CREATE_SCHEDULE", "UPLOAD_DOC"]},
-            {"id": "R_STUDENT", "name": "STUDENT", "perms": ["BOOK_APT", "VIEW_DOC"]}
+            # Role Quản trị hệ thống
+            {"id": "R_ADMIN", "name": "ADMIN", "perms": ["MANAGE_USER", "SYNC_DATA", "VIEW_LOGS"]},
+            
+            # Role Giảng dạy/Học tập
+            {"id": "R_TUTOR", "name": "TUTOR", "perms": ["CREATE_SCHEDULE", "UPLOAD_DOC", "VIEW_STUDENTS"]},
+            {"id": "R_STUDENT", "name": "STUDENT", "perms": ["BOOK_APT", "VIEW_DOC", "RATE_TUTOR"]},
+            
+            # Role Quản lý/Nghiệp vụ
+            {
+                "id": "R_OFFICER", 
+                "name": "OFFICER", 
+                "perms": ["VIEW_ALL_TRANSCRIPTS", "EXPORT_REPORTS", "MANAGE_SCHOLARSHIP"] 
+                # Ví dụ: Xem bảng điểm toàn trường, Xuất báo cáo, Xét học bổng
+            },
+            {
+                "id": "R_DEPARTMENT", 
+                "name": "DEPARTMENT", 
+                "perms": ["VIEW_DEPT_STATS", "MANAGE_DISCIPLINE", "APPROVE_REQUESTS"] 
+                # Ví dụ: Xem thống kê khoa, Xử lý kỷ luật/Đuổi học, Duyệt yêu cầu
+            }
         ]
 
 class HttpSSOClient:
@@ -220,6 +286,25 @@ class AuthService:
         }
         self.sso_client = HttpSSOClient()
         self.userRepo = UserRepository()
+        
+    def get_detail_profile(self, token: str) -> dict:
+        try:
+            secret_key = "dev-secret"
+            payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+            user_id = payload.get('user_id')
+            
+            user = self.userRepo.get_user_by_id(user_id)
+            if not user:
+                return {"error": "User not found"}
+
+            safe_user = user.copy()
+            safe_user.pop('password', None)
+            return safe_user
+            
+        except jwt.ExpiredSignatureError:
+            return {"error": "Token expired"}
+        except jwt.InvalidTokenError:
+            return {"error": "Invalid token"}
 
     def get_sso_login_redirect_url(self) -> str:
         base = self.sso_config["sso_login_url"]

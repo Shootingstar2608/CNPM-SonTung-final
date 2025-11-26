@@ -45,3 +45,17 @@ def verify():
     token = request.get_json().get('token')
     is_valid = auth_service.validate_local_token(token)
     return jsonify({'valid': is_valid}), 200
+
+@bp.route('/profile', methods=['GET'])
+def get_my_profile():
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Thiếu hoặc sai format Token'}), 401
+    
+    token = auth_header.split(' ')[1]
+    profile = auth_service.get_detail_profile(token)
+    
+    if 'error' in profile:
+        return jsonify(profile), 401
+        
+    return jsonify({'user': profile}), 200

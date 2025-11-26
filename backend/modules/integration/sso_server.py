@@ -6,30 +6,17 @@ import uuid
 app = Flask(__name__)
 
 MOCK_USERS = {
-    "student": {
-        "sso_id": "u2",                 
-        "name": "Duy Khang",            
-        "email": "student@hcmut.edu.vn", 
-        "role": "STUDENT"
-    },
-    "tutor": {
-        "sso_id": "u1",                 
-        "name": "Đỗ Hồng Phúc",         
-        "email": "tutor@hcmut.edu.vn", 
-        "role": "TUTOR"
-    },
-    "admin": {
-        "sso_id": "u3",                
-        "name": "Tín",                  
-        "email": "admin@hcmut.edu.vn", 
-        "role": "ADMIN"
-    }
+    "student": { "sso_id": "u2", "name": "Bùi Trần Duy Khang", "email": "student@hcmut.edu.vn", "role": "STUDENT" },
+    "tutor":   { "sso_id": "u1", "name": "Đỗ Hồng Phúc", "email": "tutor@hcmut.edu.vn", "role": "TUTOR" },
+    "admin":   { "sso_id": "u3", "name": "Lê Trọng Tín", "email": "admin@hcmut.edu.vn", "role": "ADMIN" },
+    
+    "officer": { "sso_id": "u4", "name": "Mai Đức Trung", "email": "mai.trung@hcmut.edu.vn", "role": "OFFICER" },
+    "dept":    { "sso_id": "u5", "name": "Quản Thành Thơ", "email": "thothanhquan@hcmut.edu.vn", "role": "DEPARTMENT" }
 }
 
 active_codes = {}
 
 def clean_expired_codes():
-    """Xóa code quá 5 phút"""
     now = datetime.now()
     expired_codes = [
         code for code, data in active_codes.items()
@@ -47,32 +34,37 @@ def home():
 def authorize():
     redirect_uri = request.args.get('redirect_uri', '')
     return f"""
-    <div style="text-align:center; padding-top:50px; font-family:sans-serif">
-        <h2>Giả lập đăng nhập SSO (HCMUT)</h2>
-        <p>Chọn tài khoản để đăng nhập thử:</p>
+    <div style="text-align:center; padding-top:20px; font-family:sans-serif">
+        <h2>Giả lập SSO (5 Roles)</h2>
+        <p>Chọn tài khoản để đăng nhập:</p>
         <form action="/login-action" method="POST">
             <input type="hidden" name="redirect_uri" value="{redirect_uri}">
             
-            <button name="user" value="student" style="padding:10px 20px; margin:5px; cursor:pointer; background:#e0f7fa; border:1px solid #006064; border-radius:5px">
-                <strong>Sinh viên:</strong> Duy Khang (u2)
-            </button> 
-            <br>
+            <div style="margin-bottom: 15px;">
+                <button name="user" value="admin" style="padding:10px; width: 200px; cursor:pointer; background:#fce4ec; border:1px solid #880e4f">
+                    <strong>Admin:</strong> Lê Trọng Tín
+                </button>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <button name="user" value="tutor" style="padding:10px; width: 200px; cursor:pointer; background:#fff3e0; border:1px solid #e65100">
+                    <strong>Tutor:</strong> Đỗ Hồng Phúc
+                </button> 
+                <button name="user" value="student" style="padding:10px; width: 200px; cursor:pointer; background:#e0f7fa; border:1px solid #006064">
+                    <strong>Student:</strong> Duy Khang
+                </button> 
+            </div>
             
-            <button name="user" value="tutor" style="padding:10px 20px; margin:5px; cursor:pointer; background:#fff3e0; border:1px solid #e65100; border-radius:5px">
-                <strong>Gia sư:</strong> Đỗ Hồng Phúc (u1)
-            </button> 
-            <br>
-            
-            <button name="user" value="admin" style="padding:10px 20px; margin:5px; cursor:pointer; background:#fce4ec; border:1px solid #880e4f; border-radius:5px">
-                <strong>Admin:</strong> Tín (u3)
-            </button>
+            <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                <p><strong>Nhóm Quản lý & Phòng ban:</strong></p>
+                <button name="user" value="officer" style="padding:10px; width: 200px; cursor:pointer; background:#e8eaf6; border:1px solid #1a237e">
+                    <strong>Officer:</strong> Mai Đức Trung<br>(Phòng Đào tạo)
+                </button> 
+                <button name="user" value="dept" style="padding:10px; width: 200px; cursor:pointer; background:#f3e5f5; border:1px solid #4a148c">
+                    <strong>Dept:</strong> Quản Thành Thơ<br>(Phòng CTSV)
+                </button>
+            </div>
         </form>
-        
-        <hr style="margin-top:30px; width:50%">
-        <small style="color:#666">
-            Tip: Code có hiệu lực 5 phút<br>
-            Active codes: {len(active_codes)}
-        </small>
     </div>
     """
 
