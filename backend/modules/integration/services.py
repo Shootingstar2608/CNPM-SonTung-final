@@ -222,7 +222,6 @@ class AuthService:
         self.userRepo = UserRepository()
 
     def get_sso_login_redirect_url(self) -> str:
-        """Tạo URL để redirect đến SSO"""
         base = self.sso_config["sso_login_url"]
         redirect_uri = "http://localhost:5000/auth/sso/callback"
         return f"{base}?redirect_uri={redirect_uri}"
