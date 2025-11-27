@@ -57,4 +57,4 @@ Ghi chú:
 - Xác thực: sau flow SSO server trả `access_token` (JWT). FE lưu token tạm thời (không khuyến nghị lưu lâu trên localStorage). Gửi header `Authorization: Bearer <token>` khi gọi endpoint cần xác thực.
 - Với hành động yêu cầu role (upload, grant-role, scheduler, admin) — server trả 403 nếu token không đủ quyền.
 - Không upload file: `/library/upload` nhận `link` (URL). FE nên upload file lên dịch vụ lưu trữ (Drive/Cloud) và gửi URL.
-- Lỗi trả về dạng JSON với trường `error` và mã HTTP phù hợp.
+- Lỗi trả về dạng JSON với trường `error` và mã HTTP phù hợp
