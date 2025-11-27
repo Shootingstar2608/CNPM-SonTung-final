@@ -50,14 +50,11 @@ Ghi chú:
 | POST | `/appointments/` | Bearer (TUTOR) | Tạo buổi (kiểm tra trùng giờ cho cùng tutor) | `{ "name","start_time":"YYYY-MM-DD HH:MM:SS","end_time":"...","place","max_slot" }` | `{ "message":"Tạo lịch thành công","data":{...}}` | 201 / 400 / 409 |
 | DELETE | `/appointments/<apt_id>` | Bearer (TUTOR owner) | Hủy buổi (chuyển status -> CANCELLED) | không | `{ "message":"Đã hủy buổi hẹn" }` | 200 / 403 / 404 |
 | POST | `/appointments/<apt_id>/book` | Bearer (STUDENT) | Đặt lịch (kiểm tra đầy/đặt trùng giờ) | không | `{ "message":"Đặt lịch thành công","appointment":{...} }` | 200 / 400 / 404 / 409 |
+| DELETE | `/appointments/<apt_id>/book` | Bearer (STUDENT) | Hủy đặt lịch (student bỏ slot đã book) | không | `{ "message": "Đã hủy đặt lịch thành công" }` | 200 / 400 / 404 |
 | GET | `/appointments/` | không | Liệt kê buổi; có thể lọc `tutor_id` | query: `tutor_id` | `[{...appointments...}]` | 200 |
 
 ## Ghi chú chung cho FE
 - Xác thực: sau flow SSO server trả `access_token` (JWT). FE lưu token tạm thời (không khuyến nghị lưu lâu trên localStorage). Gửi header `Authorization: Bearer <token>` khi gọi endpoint cần xác thực.
 - Với hành động yêu cầu role (upload, grant-role, scheduler, admin) — server trả 403 nếu token không đủ quyền.
 - Không upload file: `/library/upload` nhận `link` (URL). FE nên upload file lên dịch vụ lưu trữ (Drive/Cloud) và gửi URL.
-- Lỗi trả về dạng JSON với trường `error` và mã HTTP phù hợp.
-
-
-
-
+- Lỗi trả về dạng JSON với trường `error` và mã HTTP phù hợp
