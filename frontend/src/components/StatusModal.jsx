@@ -1,21 +1,28 @@
 import React from 'react';
 import { Check, AlertCircle, TriangleAlert } from 'lucide-react'; 
 
-const StatusModal = ({ isOpen, onClose, onConfirm, type = 'success', title, message }) => {
+const StatusModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  type = 'success', 
+  title, 
+  message,
+  confirmText = 'OK' // Mặc định là OK, nhưng có thể đổi thành "Thêm", "Xóa"...
+}) => {
   if (!isOpen) return null;
 
   const isConfirm = type === 'confirm';
   const isSuccess = type === 'success';
   const isError = type === 'error';
   const isWarning = type === 'warning'; 
+  const isErrorAction = type === 'error-action'; // <-- Loại mới: Lỗi nhưng có nút hành động (Hình 2)
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-      
       <div className={`bg-white rounded-xl shadow-xl w-full max-w-[400px] p-8 transform transition-all animate-fade-in-up ${
-        isWarning ? 'border border-red-500' : ''
+        (isWarning || isError || isErrorAction) ? 'border border-red-100' : ''
       }`}>
-        
         <div className="flex flex-col items-center">
           
           {/* --- ICON --- */}
@@ -24,7 +31,7 @@ const StatusModal = ({ isOpen, onClose, onConfirm, type = 'success', title, mess
                 <Check size={28} strokeWidth={3} />
              </div>
           )}
-          {isError && (
+          {(isError || isErrorAction) && (
              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500">
                 <AlertCircle size={28} strokeWidth={3} />
              </div>
@@ -36,57 +43,45 @@ const StatusModal = ({ isOpen, onClose, onConfirm, type = 'success', title, mess
           )}
 
           {/* --- TEXT --- */}
-          <h2 className="text-lg font-bold text-gray-900 mb-2 text-center">
-            {title}
-          </h2>
-          <p className="text-gray-600 text-center text-sm mb-8 px-2">
-            {message}
-          </p>
+          <h2 className="text-lg font-bold text-gray-900 mb-2 text-center">{title}</h2>
+          <p className="text-gray-600 text-center text-sm mb-8 px-2">{message}</p>
 
           {/* --- BUTTONS --- */}
           <div className="w-full">
             
-            {/* Case 1: Confirm (2 nút) */}
+            {/* 1. Confirm (Hủy / OK) */}
             {isConfirm && (
               <div className="flex gap-4">
-                <button onClick={onClose} className="flex-1 py-2 border border-gray-400 rounded text-gray-700 font-bold hover:bg-gray-50">
-                  Thoát
-                </button>
-                <button onClick={onConfirm} className="flex-1 py-2 bg-blue-500 text-white rounded font-bold hover:bg-blue-600">
-                  OK
-                </button>
+                <button onClick={onClose} className="flex-1 py-2 border border-gray-400 rounded text-gray-700 font-bold hover:bg-gray-50">Thoát</button>
+                <button onClick={onConfirm} className="flex-1 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">{confirmText}</button>
               </div>
             )}
 
-            {/* Case 2: Warning (2 nút) */}
+            {/* 2. Warning (Thoát / Chọn Lại) */}
             {isWarning && (
               <div className="flex gap-4">
-                <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded text-gray-900 font-bold hover:bg-gray-50 shadow-sm">
-                  Thoát
-                </button>
-                <button onClick={onConfirm} className="flex-1 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-sm">
-                  Chọn Lại
-                </button>
+                <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded text-gray-900 font-bold hover:bg-gray-50">Thoát</button>
+                <button onClick={onConfirm} className="flex-1 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">{confirmText}</button>
               </div>
             )}
 
-            {/* Case 3: Success (1 nút Thoát - ĐÃ SỬA MÀU) */}
-            {isSuccess && (
-              <button 
-                onClick={onClose}
-                className="w-full py-2 rounded font-bold shadow-sm transition-colors border border-gray-400 text-gray-800 bg-white hover:bg-gray-50"
-              >
-                Thoát
-              </button>
+            {/* 3. Error Action (Thoát / Thêm) - Giống hình bạn gửi */}
+            {isErrorAction && (
+              <div className="flex gap-4">
+                <button onClick={onClose} className="flex-1 py-2 border border-gray-300 rounded text-gray-900 font-bold hover:bg-gray-50">Thoát</button>
+                <button onClick={onConfirm} className="flex-1 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">{confirmText}</button>
+              </div>
             )}
 
-            {/* Case 4: Error (1 nút Thoát - ĐÃ SỬA MÀU) */}
-            {isError && (
+            {/* 4. Success / Error thường (1 nút) */}
+            {(isSuccess || isError) && (
               <button 
                 onClick={onClose}
-                className="w-full py-2 rounded font-bold shadow-sm transition-colors text-white bg-red-600 hover:bg-red-700"
+                className={`w-full py-2 rounded font-bold shadow-sm transition-colors ${
+                    isSuccess ? 'bg-white border border-gray-400 text-gray-800 hover:bg-gray-50' : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
               >
-                Thoát
+                {confirmText === 'OK' && isError ? 'Thoát' : confirmText}
               </button>
             )}
 
