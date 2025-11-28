@@ -1,70 +1,57 @@
-from flask import Blueprint, request, jsonify, current_app
-import jwt
-from datetime import datetime, timedelta
-from core.database import create_user, authenticate, db, get_user_by_email, set_user_role
-from core.security import require_role
+from flask import Blueprint, request, jsonify, g
+from modules.integration.services import AuthService
+from core.security import require_login
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-
-def _public_user(u: dict) -> dict:
-    if not u:
-        return None
-    return {k: v for k, v in u.items() if k != 'password'}
-
-
-@bp.route('/register', methods=['POST'])
-def register():
-    data = request.get_json() or {}
-    name = data.get('name')
-    email = data.get('email')
-    password = data.get('password')
-    if not name or not email or not password:
-        return jsonify({'error': 'name, email, password are required'}), 400
+auth_service = AuthService()
+@bp.route('/sso/login-url', methods=['GET'])
+def get_sso_url():
     try:
-        user = create_user(name=name, email=email, password=password, role='PENDING')
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    return jsonify({'user': _public_user(user)}), 201
+        url = auth_service.get_sso_login_redirect_url()
+        return jsonify({'redirect_url': url}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
+@bp.route('/sso/callback', methods=['GET', 'POST'])
+def sso_callback():
+    code = request.args.get('code') or (request.get_json() or {}).get('code')
 
-@bp.route('/login', methods=['POST'])
-def login():
+    if not code:
+        return jsonify({'error': 'Missing authorization code'}), 400
+
+    result = auth_service.handle_sso_callback(code)
+
+    if result.success:
+        return jsonify({
+            'message': 'SSO Login Success',
+            'access_token': result.token,
+            'user_id': result.user_id
+        }), 200
+    else:
+        return jsonify({'error': result.error_message}), 401
+
+@bp.route('/logout', methods=['POST'])
+def logout():
     data = request.get_json() or {}
-    email = data.get('email')
-    password = data.get('password')
-    if not email or not password:
-        return jsonify({'error': 'email and password required'}), 400
-    uid = authenticate(email, password)
-    if not uid:
-        return jsonify({'error': 'Invalid credentials'}), 401
-    user = db['users'][uid]
-    secret = current_app.config.get('SECRET_KEY', 'dev-secret')
-    payload = {
-        'user_id': uid,
-        'role': user.get('role'),
-        'exp': datetime.utcnow() + timedelta(hours=2)
-    }
-    token = jwt.encode(payload, secret, algorithm='HS256')
-    return jsonify({'access_token': token, 'user_id': uid}), 200
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': 'Token required'}), 400
 
+    logout_info = auth_service.log_out(token)
+    return jsonify({'message': 'Logged out', 'sso_logout_url': logout_info.url}), 200
 
-@bp.route('/grant-role', methods=['POST'])
-@require_role('ADMIN')
-def grant_role():
-    data = request.get_json() or {}
-    user_id = data.get('user_id')
-    role = data.get('role')
-    if not user_id or not role:
-        return jsonify({'error': 'user_id and role required'}), 400
-    ok = set_user_role(user_id, role)
-    if not ok:
-        return jsonify({'error': 'User not found'}), 404
-    return jsonify({'user': _public_user(db['users'][user_id])}), 200
+@bp.route('/verify', methods=['POST'])
+def verify():
+    token = request.get_json().get('token')
+    is_valid = auth_service.validate_local_token(token)
+    return jsonify({'valid': is_valid}), 200
 
-
-@bp.route('/users', methods=['GET'])
-@require_role('ADMIN')
-def list_users():
-    users = [_public_user(u) for u in db['users'].values()]
-    return jsonify({'users': users}), 200
+@bp.route('/profile', methods=['GET'])
+@require_login
+def get_my_profile():
+    # `require_login` already set `g.current_user`
+    user = g.get('current_user')
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    return jsonify({'user': user}), 200

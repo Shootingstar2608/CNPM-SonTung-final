@@ -1,3 +1,5 @@
 Flask
 bcrypt
 PyJWT
+requests
+Flask-APScheduler

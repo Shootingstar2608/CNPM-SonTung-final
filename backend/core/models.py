@@ -1,6 +1,95 @@
 # backend/core/models.py
 from dataclasses import dataclass, asdict, field
-from typing import Optional, List
+from typing import Optional, List, Set
+from enum import Enum
+from datetime import datetime
+
+# SyncService
+
+class SyncStatusEnum(Enum):
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+
+class SyncTypeEnum(Enum):
+    PERSONAL = "PERSONAL"
+    ROLE = "ROLE"
+
+@dataclass
+class Permission:
+    code: str
+    description: str
+
+    def __hash__(self):
+        return hash(self.code)
+
+@dataclass
+class UserProfile:
+    id: str
+    name: str
+    email: str
+    avatar_url: str = ""
+
+@dataclass
+class SyncReport:
+    timestamp: datetime
+    status: SyncStatusEnum
+    message: str
+    records_processed: int = 0
+    errors: List[str] = field(default_factory=list)
+    
+    def to_dict(self):
+        return {
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "status": self.status.value,
+            "message": self.message,
+            "records_processed": self.records_processed,
+            "errors": self.errors
+        }
+
+@dataclass
+class AuthResult:
+    success: bool
+    token: Optional[str] = None
+    user_id: Optional[str] = None
+    error_message: Optional[str] = None
+
+@dataclass
+class SsoLogoutUrl:
+    url: str
+
+@dataclass
+class SyncStatus:
+    last_run: datetime
+    status: SyncStatusEnum
+    details: str
+    
+    def to_dict(self):
+        return {
+            "last_run": self.last_run.isoformat() if self.last_run else None,
+            "status": self.status.value,
+            "details": self.details
+        }
+
+# Core entitys
+
+@dataclass
+class Role:
+    id: str
+    name: str
+    _permissions: Set[Permission] = field(default_factory=set)
+
+    def get_permissions(self) -> Set[Permission]:
+        return self._permissions
+    
+    def add_permission(self, perm: Permission):
+        self._permissions.add(perm)
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id, 
+            "name": self.name,
+            "permissions": [p.code for p in self._permissions]
+        }
 
 @dataclass
 class User:
@@ -8,17 +97,25 @@ class User:
     name: str
     email: str
     password: str
-    role: str
-    # THÊM: Lưu danh sách các mã lịch hẹn đã đặt (dành cho Student)
-    # field(default_factory=list) giúp tạo list rỗng mặc định khi tạo user mới
+    role: any 
+    
     booked_appointments: List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        data = asdict(self)
+        if hasattr(self.role, 'name'):
+            data['role'] = self.role.name
+        elif hasattr(self.role, 'get'):
+             data['role'] = self.role.get('name', 'UNKNOWN')
+        return data
 
-@dataclass
-class Role:
-    name: str
+    def get_profile(self) -> UserProfile:
+        return UserProfile(id=self.id, name=self.name, email=self.email)
+
+    def get_role(self) -> Role:
+        return self.role
+
+# LibraryService
 
 @dataclass
 class Appointment:
@@ -35,7 +132,6 @@ class Appointment:
     def to_dict(self) -> dict:
         return asdict(self)
 
-
 @dataclass
 class Document:
     id: str
@@ -49,18 +145,33 @@ class Document:
     def to_dict(self) -> dict:
         return asdict(self)
 
-# Đây là class dùng để lưu lại lịch sử truy cập của từng user 
-# Lưu ý: Chỉ những hành động tải tài liệu (UPLOAD), gửi(SENT), nhận(RECEIVED) 
-# và XEM CHI TIẾT 1 TÀI LIỆU(VIEW) mới được lưu vào lịch sử  
-# Xem toàm bộ tài liệu thì ko ghi tránh gây rác lịch sử 
 @dataclass
 class DocumentAccess:
     id: str
-    user_id: str    # người thực hiện hành động
+    user_id: str    
     doc_id: str
-    action: str     # 'VIEW', 'SEND', 'RECEIVE' 
-                    # 'UPLOAD' - dành riêng cho role TUTOR 
+    action: str     # 'VIEW', 'SEND', 'RECEIVE', 'UPLOAD'
     timestamp: str
-    partner_id: str      # người bị tác động bới hành động của user_id 
+    partner_id: str      
+    
     def to_dict(self) -> dict:
+        return asdict(self)
+    
+@dataclass
+class SchedulerConfig:
+    # type: 'INTERVAL' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
+    schedule_type: str = "INTERVAL" 
+    interval_minutes: int = 60 
+    
+    # Dùng cho DAILY/WEEKLY/MONTHLY (Giờ chạy, ví dụ "02:30")
+    run_time: str = "00:00"
+    
+    # Dùng cho WEEKLY (0=Mon, 6=Sun) hoặc MONTHLY (1-31)
+    day_value: str = "*" 
+    
+    is_active: bool = False
+    last_run: Optional[str] = None
+    next_run: Optional[str] = None
+
+    def to_dict(self):
         return asdict(self)
