@@ -6,6 +6,8 @@ from core.security import require_login
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 auth_service = AuthService()
+
+
 @bp.route('/sso/login-url', methods=['GET'])
 def get_sso_url():
     try:

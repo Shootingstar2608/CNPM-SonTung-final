@@ -1,0 +1,230 @@
+/* frontend/src/pages/ResourcePageNew.css */
+
+.library-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header Section */
+.library-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #eef2f5;
+}
+
+.library-title {
+    font-size: 28px;
+    color: #034ea2; /* Xanh BK */
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-upload {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-upload:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+/* Search Box Area */
+.search-box {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    display: flex;
+    gap: 15px;
+    margin-bottom: 40px;
+    align-items: center;
+}
+
+.search-input {
+    flex: 2;
+    padding: 12px 15px;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    border-color: #034ea2;
+    box-shadow: 0 0 0 3px rgba(3, 78, 162, 0.1);
+}
+
+.filter-select {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid #dfe3e8;
+    border-radius: 8px;
+    font-size: 16px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.btn-search-action {
+    background-color: #034ea2;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-search-action:hover {
+    background-color: #023e8a;
+}
+
+/* Grid Layout */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+}
+
+/* Document Card */
+.res-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e1e4e8;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.res-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    border-color: #034ea2;
+}
+
+.res-card-header {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.course-badge {
+    background-color: #e3f2fd;
+    color: #034ea2;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.upload-date {
+    font-size: 12px;
+    color: #888;
+}
+
+.res-card-body {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.res-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.res-info {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.res-card-footer {
+    padding: 15px 20px;
+    background-color: white;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-card {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.btn-view {
+    background-color: #fff;
+    color: #034ea2;
+    border-color: #034ea2;
+}
+
+.btn-view:hover {
+    background-color: #034ea2;
+    color: white;
+}
+
+.btn-share {
+    background-color: #fff;
+    color: #f39c12;
+    border-color: #f39c12;
+}
+
+.btn-share:hover {
+    background-color: #f39c12;
+    color: white;
+}
+
+/* States */
+.state-box {
+    text-align: center;
+    padding: 60px;
+    color: #666;
+    background: #f8f9fa;
+    border-radius: 12px;
+    font-size: 16px;
+}
+
+.error-msg {
+    color: #dc3545;
+    background-color: #fce8e6;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #fadbd8;
+}

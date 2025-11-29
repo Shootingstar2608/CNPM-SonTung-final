@@ -1,56 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import StatusModal from '../components/StatusModal';
+import { Eye, Upload, Share2, Download, Clock, ArrowLeft } from 'lucide-react'; // Import ArrowLeft
 
 const HistoryPage = () => {
   const navigate = useNavigate();
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const token = localStorage.getItem('access_token');
 
-  // 1. Dữ liệu giả lập (10 dòng giống hình)
-  const historyData = Array(8).fill({
-    name: 'Tên Tài Liệu',
-    sender: 'Người Gửi',
-    receiver: 'Người Nhận',
-    time: 'Thời Gian',
-    status: 'Trạng Thái',
-  });
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/library/history', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLogs(data);
+        }
+      } catch (error) {
+        console.error("Lỗi tải lịch sử:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [token]);
 
-  // 2. State quản lý Modal
-  const [statusModal, setStatusModal] = useState({
-    isOpen: false,
-    type: 'success',
-    title: '',
-    message: ''
-  });
-
-  // --- LOGIC XỬ LÝ XÓA LỊCH SỬ ---
-  
-  // B1: Bấm nút Xóa -> Hiện Confirm
-  const handleDeleteClick = () => {
-    setStatusModal({
-      isOpen: true,
-      type: 'confirm',
-      title: 'Xác nhận xóa',
-      message: 'Bạn có chắc chắn muốn xóa toàn bộ lịch sử truy cập không?'
-    });
-  };
-
-  // B2: Bấm OK -> Hiện Success
-  const handleConfirmDelete = () => {
-    setStatusModal({
-      isOpen: true,
-      type: 'success',
-      title: 'Success',
-      message: 'Lịch sử truy cập đã được xóa thành công'
-    });
+  const getActionConfig = (action) => {
+    switch (action) {
+      case 'VIEW': return { label: 'Đã xem', color: 'bg-blue-100 text-blue-600', icon: <Eye size={14}/> };
+      case 'UPLOAD': return { label: 'Đã đăng tải', color: 'bg-green-100 text-green-600', icon: <Upload size={14}/> };
+      case 'SENT': return { label: 'Đã chia sẻ', color: 'bg-orange-100 text-orange-600', icon: <Share2 size={14}/> };
+      case 'RECEIVED': return { label: 'Được chia sẻ', color: 'bg-purple-100 text-purple-600', icon: <Download size={14}/> };
+      default: return { label: action, color: 'bg-gray-100 text-gray-600', icon: <Clock size={14}/> };
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-700 pb-10">
       <Header />
 
-      {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-xs text-gray-500">
         <Link to="/" className="hover:text-blue-600">Trang chủ</Link>
         <span className="mx-2">›</span>
@@ -60,102 +51,58 @@ const HistoryPage = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-xl font-bold text-gray-900 mb-6">Trang Tài liệu học tập dành cho Tutor</h1>
+        {/* NÚT QUAY LẠI */}
+        <button
+            onClick={() => navigate('/resources')}
+            className="flex items-center gap-2 text-gray-500 hover:text-blue-600 mb-4 transition-colors font-medium"
+        >
+            <ArrowLeft size={20} /> Quay lại Menu
+        </button>
 
-        {/* --- TABS --- */}
-        <div className="flex border-b border-gray-200 mb-6 bg-white rounded-t-lg shadow-sm w-full md:w-fit overflow-hidden">
-          {/* Tab 1: Link về trang Upload */}
-          <button 
-            onClick={() => navigate('/resources/upload')}
-            className="px-8 py-3 text-gray-600 hover:bg-gray-50 font-medium text-sm transition-colors"
-          >
-            Đăng Tải Tài Liệu
-          </button>
-          
-          {/* Tab 2: Giả lập */}
-          <button className="px-8 py-3 text-gray-600 hover:bg-gray-50 font-medium text-sm transition-colors">
-            Tìm Kiếm & Chia Sẻ
-          </button>
-          
-          {/* Tab 3: Active (Màu cam) */}
-          <button className="px-8 py-3 bg-orange-50 text-orange-600 font-bold border-b-2 border-orange-500 text-sm">
-            Lịch Sử Truy Cập
-          </button>
-        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-6">Lịch sử hoạt động cá nhân</h1>
 
-        {/* --- DANH SÁCH LỊCH SỬ --- */}
-        <div className="bg-white/50 rounded-xl p-4 min-h-[500px] flex flex-col justify-between">
-            
-            <div className="space-y-3">
-                {/* Header Row */}
-                <div className="grid grid-cols-6 gap-4 px-6 py-2 text-sm font-bold text-gray-800">
-                    <div className="col-span-1">Tên Tài Liệu</div>
-                    <div className="col-span-1 text-center">Người Gửi</div>
-                    <div className="col-span-1 text-center">Người Nhận</div>
-                    <div className="col-span-1 text-center">Thời Gian</div>
-                    <div className="col-span-1 text-center">Trạng Thái</div>
-                    <div className="col-span-1"></div>
-                </div>
-
-                {/* Data Rows */}
-                {historyData.map((item, index) => (
-                    <div key={index} className="bg-white rounded-full px-6 py-3 shadow-sm border border-gray-100 grid grid-cols-6 gap-4 items-center text-sm hover:shadow-md transition-shadow">
-                        <div className="col-span-1 font-medium text-gray-900">{item.name}</div>
-                        <div className="col-span-1 text-center text-gray-600">{item.sender}</div>
-                        <div className="col-span-1 text-center text-gray-600">{item.receiver}</div>
-                        <div className="col-span-1 text-center text-gray-600">{item.time}</div>
-                        <div className="col-span-1 text-center text-gray-600">{item.status}</div>
-                        <div className="col-span-1 text-right">
-                            <a href="#" className="text-blue-500 hover:underline font-medium">Xem</a>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center items-center gap-2 mt-8">
-                <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500">
-                    <ChevronLeft size={16} />
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white font-bold text-xs">1</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-600 text-xs font-medium">2</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-600 text-xs font-medium">3</button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500">
-                    <ChevronRight size={16} />
-                </button>
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="flex justify-between items-center mt-6 border-t pt-6 px-4">
-                <div className="w-1/3"></div> {/* Spacer trái */}
-                
-                <button className="w-1/3 py-2 border border-gray-300 bg-white rounded font-bold text-gray-700 hover:bg-gray-50"
-                onClick={() => navigate('/resources')}>
-                    Thoát
-                </button>
-                
-                <div className="w-1/3 flex justify-end">
-                    <button 
-                        onClick={handleDeleteClick}
-                        className="px-8 py-2 bg-blue-600 rounded font-bold text-white hover:bg-blue-700 shadow-sm"
-                    >
-                        Xóa Lịch Sử
-                    </button>
-                </div>
-            </div>
-
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[400px]">
+            {loading ? (
+                <div className="p-10 text-center text-gray-500">Đang tải dữ liệu...</div>
+            ) : (
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-700 font-bold border-b border-gray-200">
+                        <tr>
+                            <th className="px-6 py-4 w-40">Hoạt động</th>
+                            <th className="px-6 py-4">Tên tài liệu</th>
+                            <th className="px-6 py-4">Người dùng liên quan</th>
+                            <th className="px-6 py-4 text-right">Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {logs.length > 0 ? logs.map((log) => {
+                            const config = getActionConfig(log.action);
+                            return (
+                                <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${config.color}`}>
+                                            {config.icon} {config.label}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-gray-800">{log.doc_title || 'Tài liệu không xác định'}</td>
+                                    <td className="px-6 py-4 text-gray-500">
+                                        {log.action === 'SENT' && log.partner_name && <span>Đến: <span className="font-semibold text-gray-700">{log.partner_name}</span></span>}
+                                        {log.action === 'RECEIVED' && log.partner_name && <span>Từ: <span className="font-semibold text-gray-700">{log.partner_name}</span></span>}
+                                        {(log.action === 'VIEW' || log.action === 'UPLOAD') && <span className="text-gray-400 italic text-xs">- Bạn -</span>}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-gray-500 font-mono text-xs">{log.timestamp}</td>
+                                </tr>
+                            );
+                        }) : (
+                            <tr>
+                                <td colSpan="4" className="p-10 text-center text-gray-400 italic">Chưa có lịch sử hoạt động nào được ghi nhận.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            )}
         </div>
       </main>
-
-      {/* MODAL THÔNG BÁO */}
-      <StatusModal 
-        isOpen={statusModal.isOpen}
-        onClose={() => setStatusModal({ ...statusModal, isOpen: false })}
-        onConfirm={handleConfirmDelete} // Hàm xử lý khi bấm OK ở Confirm
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
-      />
     </div>
   );
 };
