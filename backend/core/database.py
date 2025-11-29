@@ -55,9 +55,55 @@ def init_db():
         status="OPEN"
     )
     db["appointments"] = {a1.id: asdict(a1)}
-    
+
     # --------------------
-    # --- TÍN THÊM DỮ LIỆU MẪU CHO MODULE 3 - DOCUMENTS --- 
+    # --- TÍN THÊM DỮ LIỆU MẪU CHO MODULE 3 - DOCUMENTS ---
+    # --- 3. DOCUMENTS (Sinh tự động 40+ tài liệu) ---
+
+    mock_courses = [
+        ("CH1003", "Hóa đại cương"),
+        ("SP1037", "Tư tưởng Hồ Chí Minh"),
+        ("CO2001", "Kỹ năng Chuyên nghiệp cho Kỹ sư"),
+        ("CO3001", "Công nghệ Phần mềm"),
+        ("CO3005", "Nguyên lý Ngôn ngữ Lập trình"),
+        ("CO3093", "Mạng máy tính"),
+        ("CO3011", "Quản lý Dự án Phần mềm"),
+        ("CO3013", "Xây dựng Chương trình Dịch"),
+        ("CO3015", "Kiểm tra Phần mềm"),
+        ("CO3017", "Kiến trúc Phần mềm"),
+        ("CO3021", "Hệ Quản trị Cơ sở Dữ Liệu"),
+        ("CO3023", "CSDL Phân tán và Hướng đối tượng"),
+        ("CO3027", "Thương mại Điện tử"),
+        ("CO3029", "Khai phá Dữ liệu"),
+        ("CO3031", "Phân tích và Thiết kế Giải Thuật"),
+        ("CO3033", "Bảo mật Hệ thống Thông tin"),
+        ("CO3035", "Hệ thời gian thực"),
+        ("CO3037", "Phát triển Ứng dụng IoT"),
+        ("CO3041", "Hệ thống Thông minh"),
+        ("CO3043", "Phát triển Ứng dụng Di động"),
+        ("CO3045", "Lập trình Game"),
+        ("CO3047", "Mạng máy tính nâng cao"),
+        ("CO3049", "Lập trình Web"),
+        ("CO3051", "Hệ thống thiết bị di động"),
+        ("CO3057", "Xử lý Ảnh số và Thị giác Máy tính"),
+        ("CO3059", "Đồ họa Máy tính"),
+        ("CO3061", "Nhập môn Trí tuệ Nhân tạo"),
+        ("CO3065", "Công nghệ Phần mềm Nâng cao"),
+        ("CO3067", "Tính toán Song song"),
+        ("CO3069", "Mật mã và An ninh mạng"),
+        ("CO3071", "Hệ phân bố"),
+        ("CO3083", "Mật mã học và Mã hóa Thông tin"),
+        ("CO3085", "Xử lý Ngôn ngữ Tự nhiên"),
+        ("CO3089", "Chủ đề Nâng cao KHMT"),
+        ("CO3101", "Đồ án Tổng hợp - AI"),
+        ("CO3103", "Đồ án Tổng hợp - CNPM"),
+        ("CO3105", "Đồ án Tổng hợp - HTTT"),
+        ("CO3109", "Thực tập Đồ án Đa ngành - CNPM"),
+        ("CO4031", "Kho dữ Liệu và Hỗ trợ Quyết định"),
+        ("CO4033", "Phân tích Dữ liệu lớn"),
+        ("TH3636", "Đặc sản Nem chua")  # Giữ lại môn cũ của bạn
+    ]
+
     d1 = Document(
         id="doc1",
         title="Slide bài giảng CNPM Chương 1",
@@ -67,21 +113,35 @@ def init_db():
         course_code="CO3001",
         created_at="2025-11-26 10:00:00"
     )
-
-    # Nhớ chỗ này gán là phải lưu vào index trong document == id
-    # dù chưa tối ưu lắm nếu id là số quá lớn ... 
     db["documents"][d1.id] = asdict(d1)
-    
+
     d2 = Document(
         id="doc2",
         title="Giới thiệu đặc sản nem chua",
         description="Tổng quan mảnh đất trữ tình",
-        uploader_id="u3", 					# Admin Tín upload 
+        uploader_id="u3",
         link="https://drive.google.com/file/d/366...",
         course_code="TH3636",
         created_at="2025-11-26 10:00:00"
     )
     db["documents"][d2.id] = asdict(d2)
+
+    # Vòng lặp sinh thêm 40 tài liệu từ danh sách trên
+    for i, (code, name) in enumerate(mock_courses, start=3):
+        doc_id = f"doc{i}"
+        # Xen kẽ người upload để đa dạng dữ liệu
+        uploader = "u1" if i % 2 == 0 else "u3"
+
+        new_doc = Document(
+            id=doc_id,
+            title=f"Tài liệu ôn tập {name}",
+            description=f"Tổng hợp kiến thức, đề thi các năm môn {name} - HK232.",
+            uploader_id=uploader,
+            link=f"https://drive.google.com/file/d/mock_link_{doc_id}",
+            course_code=code,
+            created_at="2025-11-26 10:00:00"
+        )
+        db["documents"][doc_id] = asdict(new_doc)
 
 
 

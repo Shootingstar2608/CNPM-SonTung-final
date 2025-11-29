@@ -1,62 +1,69 @@
 import React, { useState } from 'react';
-import { X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Search, ChevronLeft, ChevronRight, User } from 'lucide-react';
 
-const ShareModal = ({ isOpen, onClose, onShowAlert }) => {
+const ShareModal = ({ isOpen, onClose, onShowAlert, onConfirm }) => {
   if (!isOpen) return null;
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [userList, setUserList] = useState([]); 
+  const [userList, setUserList] = useState([]);
 
-  // --- DANH SÁCH NGƯỜI DÙNG GIẢ LẬP (DATABASE) ---
-  // Chỉ có 3 người này tồn tại trong hệ thống
-  const mockUsers = [
-    { id: 1, name: 'Nguyễn Văn An', email: 'an.nguyen@hcmut.edu.vn' },
-    { id: 2, name: 'Trần Thị Bình', email: 'binh.tran@hcmut.edu.vn' },
-    { id: 3, name: 'Lê Văn Cường', email: 'cuong.le@hcmut.edu.vn' },
+  // --- DỮ LIỆU ĐỒNG BỘ VỚI FILE database.py CỦA BACKEND ---
+  // Backend hiện đang có 3 user này được khởi tạo trong init_db()
+  const dbUsers = [
+    { id: 'u1', name: 'Đỗ Hồng Phúc', email: 'tutor@hcmut.edu.vn', role: 'TUTOR' },
+    { id: 'u2', name: 'Duy Khang', email: 'student@hcmut.edu.vn', role: 'STUDENT' },
+    { id: 'u3', name: 'Tín', email: 'admin@hcmut.edu.vn', role: 'ADMIN' },
   ];
 
   const handleSearch = () => {
-    // 1. Nếu ô trống -> Báo lỗi Failed (Đỏ)
+    // 1. Validate rỗng
     if (!searchTerm.trim()) {
-      onShowAlert('error', 'Failed', 'Trường thông tin không được trống');
+      if (onShowAlert) {
+        onShowAlert('error', 'Lỗi nhập liệu', 'Vui lòng nhập tên hoặc email người nhận.');
+      }
       return;
     }
 
-    // 2. Logic tìm kiếm: Lọc trong danh sách mockUsers
-    const results = mockUsers.filter(user => 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const term = searchTerm.toLowerCase();
+
+    // 2. Logic tìm kiếm: Ưu tiên tìm theo EMAIL vì API Backend share theo email
+    // Tuy nhiên vẫn cho phép tìm theo tên để thuận tiện cho người dùng
+    const results = dbUsers.filter(user =>
+      user.email.toLowerCase().includes(term) ||
+      user.name.toLowerCase().includes(term)
     );
 
     if (results.length > 0) {
-      // 3. Nếu TÌM THẤY -> Hiện danh sách
       setUserList(results);
     } else {
-      // 4. Nếu KHÔNG TÌM THẤY -> Báo Warning (Tam giác vàng)
-      setUserList([]); // Xóa danh sách cũ
-      onShowAlert(
-        'warning', 
-        'Không Tìm Thấy Người Dùng', 
-        'Không tìm thấy người dùng với từ khóa đã nhập'
-      );
+      setUserList([]);
+      if (onShowAlert) {
+        onShowAlert(
+          'warning',
+          'Không tìm thấy',
+          `Không tìm thấy người dùng nào khớp với "${searchTerm}" trong hệ thống`
+        );
+      }
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[55] flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden animate-scale-up min-h-[400px] flex flex-col">
-        
+
         {/* Header Search */}
-        <div className="p-6 border-b border-gray-100 flex gap-4 items-center relative">
+        <div className="p-6 border-b border-gray-100 flex gap-4 items-center relative bg-gray-50">
            <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Nhập tên người nhận (VD: An, Bình...)" 
+              <input
+                type="text"
+                // Placeholder nhắc người dùng nhập Email
+                placeholder="Nhập email (VD: student@hcmut...) hoặc tên..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                // Bấm Enter cũng kích hoạt tìm kiếm
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+                autoFocus
               />
               {searchTerm && (
                 <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -64,55 +71,68 @@ const ShareModal = ({ isOpen, onClose, onShowAlert }) => {
                 </button>
               )}
            </div>
-           
-           <button 
+
+           <button
              onClick={handleSearch}
-             className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm"
+             className="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
            >
              Tìm Kiếm
            </button>
 
-           <button onClick={onClose} className="absolute -top-2 -right-2 p-4 text-gray-400 hover:text-gray-600">
+           <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-200">
              <X size={20} />
            </button>
         </div>
 
         {/* Body Result */}
-        <div className="flex-1 p-6 bg-gray-50/30">
+        <div className="flex-1 p-6 bg-white overflow-y-auto">
            {userList.length > 0 ? (
-             <div className="space-y-4">
+             <div className="space-y-3">
+               <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Kết quả tìm kiếm</h4>
                {userList.map((user) => (
-                 <div key={user.id} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                 <div key={user.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md hover:border-blue-100 transition-all group">
                     <div className="flex items-center gap-4">
-                       <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center relative">
-                          <div className="absolute inset-0 border-2 border-blue-600 rounded-full opacity-20"></div>
-                          <span className="text-blue-700 font-bold text-xs">BK</span>
+                       <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <User size={20} />
                        </div>
                        <div>
-                          <h4 className="font-bold text-gray-800 text-sm">{user.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-gray-800 text-sm group-hover:text-blue-700">{user.name}</h4>
+                            {/* Hiển thị Role để dễ phân biệt */}
+                            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-bold">{user.role}</span>
+                          </div>
                           <p className="text-xs text-gray-500">{user.email}</p>
                        </div>
                     </div>
-                    <button className="text-blue-500 text-sm font-bold hover:underline cursor-pointer bg-transparent border-none">
+
+                    {/* NÚT CHIA SẺ: Truyền EMAIL về vì API backend cần email */}
+                    <button
+                      onClick={() => onConfirm(user.email)}
+                      className="px-4 py-2 bg-white border border-blue-200 text-blue-600 text-sm font-bold rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                    >
                       Chia sẻ
                     </button>
                  </div>
                ))}
-               
-               {/* Pagination giả */}
-               <div className="flex justify-center items-center gap-2 mt-8">
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-gray-100 text-gray-500"><ChevronLeft size={16} /></button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white font-bold text-xs">1</button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-gray-100 text-gray-500"><ChevronRight size={16} /></button>
-               </div>
              </div>
            ) : (
-             <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm gap-2">
-               <Search size={40} className="opacity-20" />
-               <p>Hãy nhập tên để tìm kiếm người dùng</p>
+             <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 min-h-[200px]">
+               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                 <Search size={32} className="opacity-20" />
+               </div>
+               <p className="text-sm">Nhập <strong>email</strong> hoặc tên người dùng trong hệ thống (VD: Khang, Tín...)</p>
              </div>
            )}
         </div>
+
+        {/* Footer (Pagination) */}
+        {userList.length > 0 && (
+          <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-center items-center gap-2">
+              <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:bg-gray-100 text-gray-500 disabled:opacity-50" disabled><ChevronLeft size={16} /></button>
+              <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs shadow-sm">1</button>
+              <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 hover:bg-gray-100 text-gray-500 disabled:opacity-50" disabled><ChevronRight size={16} /></button>
+          </div>
+        )}
 
       </div>
     </div>
