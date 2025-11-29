@@ -79,7 +79,6 @@ def view_history():
     all_logs = list(db['access_logs'].values())
     # Sắp xếp theo thời gian giảm dần (mới nhất lên đầu)
     all_logs.sort(key=lambda x: x['timestamp'], reverse=True)
-
     for log in all_logs:
         if log['user_id'] == current_user_id:
             # Lấy thêm info để hiển thị đẹp hơn
@@ -181,7 +180,6 @@ def share_document():
         if u['email'] == receiver_email:
             receiver = u
             break
-
     if not receiver:
         return jsonify({'error': 'Không tìm thấy người dùng với email này'}), 404
     

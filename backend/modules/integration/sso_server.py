@@ -30,6 +30,7 @@ def clean_expired_codes():
 def home():
     return "<h1>HCMUT SSO Simulator (Port 5001)</h1>"
 
+
 @app.route('/authorize', methods=['GET'])
 def authorize():
     redirect_uri = request.args.get('redirect_uri', '')

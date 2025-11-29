@@ -3,3 +3,4 @@ bcrypt
 PyJWT
 requests
 Flask-APScheduler
+flask-cors

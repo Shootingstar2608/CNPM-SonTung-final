@@ -2,6 +2,7 @@ from flask import Flask
 import os
 from core.database import init_db
 from extensions import scheduler
+from flask_cors import CORS
 
 # Import Blueprints
 from modules.integration.auth_routes import bp as auth_bp
@@ -12,6 +13,8 @@ from modules.integration.admin_routes import bp as admin_bp
 
 def create_app(init_scheduler=True):
     app = Flask(__name__)
+
+    CORS(app)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret')
     app.config['SCHEDULER_API_ENABLED'] = True
     

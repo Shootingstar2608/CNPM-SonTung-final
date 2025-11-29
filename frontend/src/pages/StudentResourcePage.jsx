@@ -1,264 +1,144 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
-import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, FileText } from 'lucide-react'; // Import thêm FileText cho icon ảnh giả
-import StatusModal from '../components/StatusModal';
-import SearchBar from '../components/SearchBar';
-import DetailModal from '../components/DetailModal';
-import ShareModal from '../components/ShareModal';
+import './StudentResourcePage.css';
 
 const StudentResourcePage = () => {
-  const navigate = useNavigate();
+  const [keyword, setKeyword] = useState('');
+  const [course, setCourse] = useState('');
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // --- 1. STATES QUẢN LÝ DỮ LIỆU ---
-  const [searchTerm, setSearchTerm] = useState('');
-  const [displayedResults, setDisplayedResults] = useState([]);
+  // Lấy token (nếu có)
+  const token = localStorage.getItem('access_token');
 
-  // --- 2. STATES QUẢN LÝ MODAL ---
-  // Modal thông báo (Success/Error/Warning)
-  const [statusModal, setStatusModal] = useState({
-    isOpen: false,
-    type: 'success',
-    title: '',
-    message: ''
-  });
+  // --- HÀM TÌM KIẾM ---
+  const handleSearch = async () => {
+    setLoading(true);
+    setError('');
 
-  // Modal Chi tiết tài liệu
-  const [detailModal, setDetailModal] = useState({
-    isOpen: false,
-    data: null
-  });
+    try {
+      // FIX 1: Dùng 127.0.0.1 thay vì localhost để ổn định hơn trên Windows
+      const url = `http://127.0.0.1:5000/library?q=${keyword}&course=${course}`;
 
-  // Modal Chia sẻ tài liệu
-  const [isShareOpen, setIsShareOpen] = useState(false);
+      console.log("Đang gọi API:", url); // Log để kiểm tra
 
-  // --- 3. DỮ LIỆU GIẢ LẬP (DATABASE) ---
-  const allResources = [
-    { 
-      id: 1, 
-      owner: 'Nguyễn Văn A', 
-      title: 'Giải tích 1 - Đề thi cuối kỳ', 
-      size: '200 kB', 
-      format: 'PDF', 
-      date: '20/11/2025', 
-      views: 150, 
-      field: 'Toán học', 
-      major: 'Khoa học cơ bản' 
-    },
-    { 
-      id: 2, 
-      owner: 'Trần Thị B', 
-      title: 'Đại số tuyến tính - Bài tập lớn', 
-      size: '500 kB', 
-      format: 'DOCX', 
-      date: '21/11/2025', 
-      views: 300, 
-      field: 'Toán học', 
-      major: 'Công nghệ thông tin' 
-    },
-    { 
-      id: 3, 
-      owner: 'Lê Văn C', 
-      title: 'Vật lý đại cương 1', 
-      size: '1.2 MB', 
-      format: 'PDF', 
-      date: '22/11/2025', 
-      views: 120, 
-      field: 'Vật lý', 
-      major: 'Điện - Điện tử' 
-    },
-  ];
-
-  // --- 4. CÁC HÀM XỬ LÝ LOGIC ---
-
-  // Xử lý Tìm kiếm Tài liệu
-  const handleSearch = () => {
-    // Nếu ô tìm kiếm trống
-    if (!searchTerm.trim()) {
-      setDisplayedResults([]); // Xóa kết quả cũ
-      setStatusModal({
-        isOpen: true,
-        type: 'warning', // Tam giác vàng
-        title: 'Nhập từ khóa',
-        message: 'Vui lòng nhập tên tài liệu để tìm kiếm'
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Chỉ gửi token nếu token tồn tại (tránh gửi chuỗi "null")
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
       });
-      return;
-    }
 
-    // Lọc dữ liệu
-    const results = allResources.filter(item => 
-      item.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      if (!response.ok) {
+        // Nếu lỗi 401/403/500...
+        const errText = await response.text();
+        throw new Error(`Lỗi Server (${response.status}): ${errText}`);
+      }
 
-    if (results.length > 0) {
-      setDisplayedResults(results); // Có kết quả -> Hiện danh sách
-    } else {
-      setDisplayedResults([]); // Không có -> Xóa danh sách & Báo lỗi
-      setStatusModal({
-        isOpen: true,
-        type: 'warning',
-        title: 'Không Tìm Thấy Tài Liệu',
-        message: `Không tìm thấy tài liệu nào có tên "${searchTerm}"`
-      });
+      const data = await response.json();
+      console.log("Dữ liệu nhận được:", data); // Log dữ liệu
+      setDocuments(data);
+
+    } catch (err) {
+      console.error("Lỗi chi tiết:", err);
+      // Hiển thị lỗi rõ ràng hơn: Failed to fetch nghĩa là không nối được tới server
+      if (err.message === 'Failed to fetch') {
+        setError('🔴 Không thể kết nối tới Backend. Hãy kiểm tra: 1. Server đã chạy chưa? 2. Đã cài flask-cors chưa?');
+      } else {
+        setError(err.message);
+      }
+      setDocuments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Xử lý nút "Thoát" hoặc "Nhập lại" của StatusModal
-  const handleCloseStatus = () => {
-    setStatusModal({ ...statusModal, isOpen: false });
+  const handleViewDocument = async (docId, link) => {
+    try {
+      // Gọi API ghi log (không quan trọng kết quả, cứ gọi rồi mở link)
+      await fetch(`http://127.0.0.1:5000/library/${docId}`, {
+        method: 'GET',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+    } catch (e) {
+      console.warn("Không thể ghi log lịch sử", e);
+    }
+    window.open(link, '_blank');
   };
 
-  // Xử lý khi bấm nút "Chi Tiết" ở danh sách
-  const handleDetailClick = (item) => {
-    setDetailModal({
-      isOpen: true,
-      data: item
-    });
-  };
-
-  // Xử lý khi bấm nút "Chia Sẻ" (Từ trong DetailModal)
-  const handleOpenShare = () => {
-    setDetailModal({ ...detailModal, isOpen: false }); // Đóng Modal Chi tiết
-    setIsShareOpen(true); // Mở Modal Chia sẻ
-  };
-
-  // Hàm hiển thị thông báo (Được gọi từ bên trong ShareModal)
-  const handleShowAlert = (type, title, message) => {
-    setStatusModal({
-        isOpen: true,
-        type: type,
-        title: title,
-        message: message
-    });
-  };
+  // Tự động tìm kiếm khi vào trang
+  useEffect(() => {
+    handleSearch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-700 pb-10">
+    <div>
       <Header />
+      <div className="student-resource-container">
+        <h1 className="page-title">📚 Tài nguyên học tập</h1>
 
-      {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 text-xs text-gray-500">
-        <Link to="/" className="hover:text-blue-600">Trang chủ</Link>
-        <span className="mx-2">›</span>
-        <Link to="/resources" className="hover:text-blue-600">Tài liệu học tập</Link>
-        <span className="mx-2">›</span>
-        <span className="font-medium text-gray-700">Sinh viên</span>
+        {/* Khung tìm kiếm */}
+        <div className="search-area">
+          <div className="search-input-group">
+            <input
+              type="text"
+              placeholder="Nhập tên tài liệu, chủ đề..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className="filter-group">
+            <select value={course} onChange={(e) => setCourse(e.target.value)}>
+              <option value="">Tất cả môn học</option>
+              <option value="CO3001">CO3001 - CNPM</option>
+              <option value="CO3005">CO3005 - PPL</option>
+              <option value="MT1003">MT1003 - Giải tích 1</option>
+              <option value="GENERAL">Tài liệu chung</option>
+            </select>
+          </div>
+          <button className="btn-search" onClick={handleSearch}>Tìm kiếm</button>
+        </div>
+
+        {/* Hiển thị lỗi nếu có */}
+        {error && (
+          <div className="status-msg" style={{color: 'red', background: '#ffe6e6', padding: '15px', borderRadius: '5px'}}>
+            {error}
+          </div>
+        )}
+
+        {/* Danh sách kết quả */}
+        <div className="document-grid">
+          {loading && <div className="status-msg">⏳ Đang tải...</div>}
+
+          {!loading && !error && documents.length === 0 && (
+            <div className="status-msg">Không tìm thấy tài liệu nào.</div>
+          )}
+
+          {!loading && documents.map((doc) => (
+            <div className="doc-card" key={doc.id}>
+              <div className="doc-header">
+                <span className="course-tag">{doc.course_code}</span>
+                <small>{doc.created_at}</small>
+              </div>
+              <div className="doc-title">{doc.title}</div>
+              <div className="doc-meta">
+                <p>👤 {doc.uploader_name}</p>
+                <p>📄 {doc.description}</p>
+              </div>
+              <button className="btn-view" onClick={() => handleViewDocument(doc.id, doc.link)}>
+                👁️ Xem & Tải xuống
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <h1 className="text-xl font-bold text-gray-900 mb-6">Trang Tài liệu học tập dành cho Sinh viên</h1>
-
-        {/* TABS */}
-        <div className="flex border-b border-gray-200 mb-0 bg-transparent w-full">
-          <button className="px-12 py-3 bg-orange-50 text-orange-600 font-bold border-b-2 border-orange-500 text-sm rounded-t-lg">
-            Tìm Kiếm & Chia Sẻ
-          </button>
-          
-          <button 
-             onClick={() => navigate('/resources/history')}
-             className="px-12 py-3 text-gray-600 bg-white hover:bg-gray-50 font-medium text-sm transition-colors border-b border-gray-200 rounded-t-lg ml-1"
-          >
-            Lịch Sử Truy Cập
-          </button>
-        </div>
-
-        {/* CONTENT AREA */}
-        <div className="bg-white rounded-b-xl rounded-tr-xl shadow-sm border border-gray-200 p-8 min-h-[500px]">
-           
-           {/* Component SearchBar */}
-           <SearchBar 
-             value={searchTerm}
-             onChange={(e) => setSearchTerm(e.target.value)}
-             onSearch={handleSearch}
-             placeholder="Nhập tên tài liệu (VD: Giải tích, Đại số...)"
-           />
-
-           {/* KẾT QUẢ TÌM KIẾM */}
-           {displayedResults.length > 0 && (
-             <div className="max-w-5xl mx-auto animate-fade-in-up">
-               <h3 className="font-bold text-gray-800 mb-4 text-sm">Kết quả tìm kiếm liên quan ({displayedResults.length})</h3>
-               
-               <div className="space-y-4">
-                 {displayedResults.map((item) => (
-                   <div key={item.id} className="flex flex-col md:flex-row bg-white p-4 rounded-xl border border-gray-200 shadow-sm gap-6 hover:shadow-md transition-shadow">
-                      {/* Ảnh Placeholder */}
-                      <div className="w-full md:w-64 h-32 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center text-gray-400 font-bold border border-gray-200">
-                        <FileText size={40} className="opacity-50" />
-                      </div>
-                      
-                      {/* Thông tin */}
-                      <div className="flex-1 flex flex-col justify-between">
-                          <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">Người sở hữu: {item.owner}</span>
-                              </div>
-                              <h3 className="font-bold text-lg text-gray-900 mt-1 mb-3">{item.title}</h3>
-                              
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-500">
-                                  <span>{item.size}</span>
-                                  <span>{item.format}</span>
-                                  <span>{item.date}</span>
-                                  <span>{item.views} lượt xem</span>
-                              </div>
-                          </div>
-                          
-                          {/* Nút Chi Tiết */}
-                          <div className="border-t border-gray-100 pt-3 mt-2 text-center">
-                               <button 
-                                 onClick={() => handleDetailClick(item)}
-                                 className="text-blue-500 text-sm font-bold hover:underline inline-block bg-transparent border-none cursor-pointer"
-                               >
-                                 Chi Tiết
-                               </button>
-                          </div>
-                      </div>
-                   </div>
-                 ))}
-               </div>
-
-               {/* Pagination (Tĩnh) */}
-               <div className="flex justify-center items-center gap-2 mt-10">
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500">
-                      <ChevronLeft size={16} />
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white font-bold text-xs">1</button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium">2</button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500">
-                      <ChevronRight size={16} />
-                  </button>
-               </div>
-             </div>
-           )}
-
-        </div>
-      </main>
-
-      {/* --- CÁC MODAL --- */}
-      
-      {/* 1. Detail Modal */}
-      <DetailModal 
-        isOpen={detailModal.isOpen}
-        onClose={() => setDetailModal({ ...detailModal, isOpen: false })}
-        data={detailModal.data}
-        onShare={handleOpenShare} // Truyền hàm mở Share Modal
-      />
-
-      {/* 2. Share Modal */}
-      <ShareModal 
-        isOpen={isShareOpen}
-        onClose={() => setIsShareOpen(false)}
-        onShowAlert={handleShowAlert} // Truyền hàm hiển thị lỗi
-      />
-
-      {/* 3. Status Modal (Thông báo chung) */}
-      <StatusModal 
-        isOpen={statusModal.isOpen}
-        onClose={handleCloseStatus}
-        onConfirm={handleCloseStatus} // Nút OK/Chọn lại cũng đóng modal
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
-      />
     </div>
   );
 };

@@ -1,0 +1,152 @@
+/* frontend/src/pages/StudentResourcePage.css */
+
+/* Container chính */
+.student-resource-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+    color: #333;
+}
+
+.page-title {
+    font-size: 24px;
+    color: #034ea2; /* Xanh BK */
+    margin-bottom: 20px;
+    border-left: 5px solid #034ea2;
+    padding-left: 15px;
+}
+
+/* Khu vực tìm kiếm */
+.search-area {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.search-input-group {
+    flex: 1;
+}
+
+.search-input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+}
+
+.search-input-group input:focus {
+    border-color: #034ea2;
+}
+
+.filter-group select {
+    padding: 12px 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 15px;
+    background-color: #f9f9f9;
+    cursor: pointer;
+}
+
+.btn-search {
+    background-color: #034ea2;
+    color: white;
+    border: none;
+    padding: 0 25px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-search:hover {
+    background-color: #023e8a;
+}
+
+/* Danh sách tài liệu (Grid) */
+.document-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Thẻ tài liệu */
+.doc-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+.doc-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-color: #b3d7ff;
+}
+
+.doc-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.course-tag {
+    background-color: #e3f2fd;
+    color: #034ea2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.doc-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+    flex-grow: 1;
+}
+
+.doc-meta {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.btn-view {
+    text-align: center;
+    background-color: #fff;
+    color: #034ea2;
+    border: 1px solid #034ea2;
+    padding: 8px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-view:hover {
+    background-color: #034ea2;
+    color: white;
+}
+
+.status-msg {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-style: italic;
+}
