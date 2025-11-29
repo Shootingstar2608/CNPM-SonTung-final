@@ -11,6 +11,7 @@ from modules.scheduling.routes import bp as scheduling_bp
 from modules.integration.library_routes import bp as library_bp 
 from modules.integration.data_sync_routes import bp as data_sync_bp
 from modules.integration.admin_routes import bp as admin_bp
+from modules.reporting.routes import bp as reporting_bp
 
 def create_app(init_scheduler=True):
     app = Flask(__name__)
@@ -30,6 +31,7 @@ def create_app(init_scheduler=True):
     app.register_blueprint(library_bp)
     app.register_blueprint(data_sync_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(reporting_bp)
     
     return app
 

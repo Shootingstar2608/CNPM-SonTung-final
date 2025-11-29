@@ -7,8 +7,9 @@ function useQuery() {
 
 const roleRouteMap = {
   ADMIN: '/admin-home',
-  OFFICER: '/admin-home',
-  DEPARTMENT: '/admin-home',
+  OFFICER: '/officer-home',
+  DEPARTMENT: '/dept-home',
+  UNIVERSITY_OFFICER: '/university-officer-home',
   TUTOR: '/tutor-home',
   STUDENT: '/student-home'
 };

@@ -9,6 +9,9 @@ import RegisterPage from './pages/RegisterPage';
 import StudentHomePage from './pages/StudentHomePage';
 import TutorHomePage from './pages/TutorHomePage';
 import AdminHomePage from './pages/AdminHomePage';
+import OfficerHomePage from './pages/OfficerHomePage';
+import DeptHomePage from './pages/DeptHomePage';
+import UniversityOfficerHomePage from './pages/UniversityOfficerHomePage';
 import MeetingPage from './pages/MeetingPage';
 import OpenSessionPage from './pages/OpenSessionPage';
 import FreeSchedulePage from './pages/FreeSchedulePage';
@@ -50,6 +53,9 @@ function App() {
         <Route path="/student-home" element={<ProtectedRoute><StudentHomePage/></ProtectedRoute>} />
         <Route path="/tutor-home" element={<ProtectedRoute><TutorHomePage/></ProtectedRoute>} />
         <Route path="/admin-home" element={<ProtectedRoute><AdminHomePage/></ProtectedRoute>} />
+        <Route path="/officer-home" element={<ProtectedRoute><OfficerHomePage/></ProtectedRoute>} />
+        <Route path="/dept-home" element={<ProtectedRoute><DeptHomePage/></ProtectedRoute>} />
+        <Route path="/university-officer-home" element={<ProtectedRoute><UniversityOfficerHomePage/></ProtectedRoute>} />
 
         <Route path="/meetings" element={<ProtectedRoute><MeetingPage/></ProtectedRoute>} />
         <Route path="/create-session" element={<ProtectedRoute><OpenSessionPage/></ProtectedRoute>} />
