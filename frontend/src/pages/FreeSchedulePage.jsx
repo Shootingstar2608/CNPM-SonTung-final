@@ -12,6 +12,7 @@ const FreeSchedulePage = () => {
   const [selectedCells, setSelectedCells] = useState([]);
   const [note, setNote] = useState(''); // <--- 1. Thêm State cho Ghi chú
   const [currentWeek, setCurrentWeek] = useState(6);
+  const [isRepeatChecked, setIsRepeatChecked] = useState(false); // <--- BỔ SUNG
   const [modalStatus, setModalStatus] = useState({ isOpen: false, type: 'success', title: '', message: '' });
 
   // --- LOAD DỮ LIỆU ---
@@ -29,7 +30,11 @@ const FreeSchedulePage = () => {
         if (res.ok) {
           const data = await res.json();
           setSelectedCells(data.cells || []);
-          setNote(data.note || ''); // <--- 2. Load ghi chú từ server
+          setNote(data.note || '');
+          // BỔ SUNG: Reset cờ lặp lại khi tải lịch tuần mới
+          setIsRepeatChecked(false); // <--- BỔ SUNG
+        } else if (res.status === 401) { // <--- BỔ SUNG: Xử lý lỗi Unauthorized
+            navigate('/login');
         }
       } catch (error) {
         console.error("Lỗi tải lịch:", error);
@@ -41,31 +46,61 @@ const FreeSchedulePage = () => {
   // --- LƯU DỮ LIỆU ---
   const handleSave = async () => {
     if (!token) return;
-    try {
-      const response = await fetch('http://127.0.0.1:5000/appointments/free-schedule', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        // <--- 3. Gửi kèm note lên server
-        body: JSON.stringify({ cells: selectedCells, week: currentWeek, note: note }) 
-      });
 
-      if (response.ok) {
-        setModalStatus({
-          isOpen: true, type: 'success', title: 'Thành công',
-          message: `Dữ liệu tuần ${currentWeek} đã được lưu!`
+    const saveWeek = async (week) => {
+        // Hàm này xử lý việc gọi API lưu lịch cho tuần chỉ định
+        const response = await fetch('http://127.0.0.1:5000/appointments/free-schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ cells: selectedCells, week: week, note: note }) 
         });
-      }
+        
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || `Không thể lưu lịch tuần ${week}`);
+        }
+    };
+
+    try {
+        // 1. Lưu lịch tuần hiện tại
+        await saveWeek(currentWeek);
+        let message = `Dữ liệu tuần ${currentWeek} đã được lưu!`;
+        
+        // 2. Nếu checkbox lặp lại được chọn, lưu cho tuần sau
+        if (isRepeatChecked) {
+            const nextWeek = currentWeek + 1;
+            await saveWeek(nextWeek);
+            message += ` Đã sao chép sang Tuần ${nextWeek}.`;
+        }
+
+        setModalStatus({
+            isOpen: true, type: 'success', title: 'Thành công',
+            message: message
+        });
+        
+        // 3. Reset cờ lặp lại sau khi lưu thành công
+        setIsRepeatChecked(false); 
+        
     } catch (e) {
-      setModalStatus({ isOpen: true, type: 'error', title: 'Lỗi', message: 'Không thể lưu.' });
+        setModalStatus({ isOpen: true, type: 'error', title: 'Lỗi', message: e.message || 'Không thể lưu.' });
     }
   };
 
   // Logic chuyển tuần
   const handlePrevWeek = () => { if (currentWeek > 1) setCurrentWeek(curr => curr - 1); };
   const handleNextWeek = () => { setCurrentWeek(curr => curr + 1); };
+
+  // Logic reset
+  const handleReset = () => {
+    const confirmReset = window.confirm("Bạn có chắc chắn muốn reset lịch rảnh của tuần này?");
+    if (confirmReset) {
+      setSelectedCells([]); // Xóa hết các ô đã chọn
+      setNote('');          // Xóa ghi chú
+    }
+  };
 
   // Logic Grid
   const periods = Array.from({ length: 15 }, (_, i) => i + 1);
@@ -148,11 +183,18 @@ const FreeSchedulePage = () => {
                  ></textarea>
                </div>
                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="repeat" className="w-4 h-4 text-blue-600 rounded border-gray-300" />
+                  <input 
+                    type="checkbox" 
+                    id="repeat" 
+                    checked={isRepeatChecked} // <--- BỔ SUNG: Liên kết trạng thái
+                    onChange={(e) => setIsRepeatChecked(e.target.checked)} // <--- BỔ SUNG: Cập nhật trạng thái khi click
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300" 
+                  />
                   <label htmlFor="repeat" className="text-sm font-bold text-gray-700">Lặp lại cho tuần sau</label>
                </div>
                <div className="flex justify-center gap-4 mt-4">
-                  <button onClick={() => navigate('/')} className="px-6 py-1.5 border border-gray-400 rounded hover:bg-gray-50 text-gray-700 font-medium">Hủy</button>
+                  <button onClick={() => navigate('/meetings')} className="px-6 py-1.5 border border-gray-400 rounded hover:bg-gray-50 text-gray-700 font-medium">Hủy</button>
+                  <button onClick={handleReset} className="px-4 py-1.5 border border-red-300 text-red-600 rounded hover:bg-red-50 font-medium text-sm">Reset Lịch </button>
                   <button onClick={handleSave} className="px-6 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium shadow-sm">Lưu</button>
                </div>
             </div>
