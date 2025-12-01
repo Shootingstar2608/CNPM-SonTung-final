@@ -9,7 +9,7 @@ const tutorCards = [
     id: 1,
     title: 'Mở buổi tư vấn',
     description: 'Thiết lập lịch gặp, chủ đề và số lượng sinh viên cho từng ca.',
-    statusLabel: 'Đồng bộ',
+    statusLabel: 'Đang hoạt động',
     statusColor: 'text-green-600',
     action: '/create-session',
     illustration: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=900&q=80',
@@ -18,8 +18,8 @@ const tutorCards = [
     id: 2,
     title: 'Thiết lập lịch rảnh',
     description: 'Cập nhật khung giờ để sinh viên đặt lịch theo UC001-1A.',
-    statusLabel: 'Đang cập nhật',
-    statusColor: 'text-amber-600',
+    statusLabel: 'Đang hoạt động',
+    statusColor: 'text-green-600',
     action: '/free-schedule',
     illustration: 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=900&q=80',
   },
@@ -27,8 +27,8 @@ const tutorCards = [
     id: 3,
     title: 'Chia sẻ tài liệu',
     description: 'Tải lên giáo trình, slide, đề cương phục vụ lớp phụ trách.',
-    statusLabel: 'Hoạt động',
-    statusColor: 'text-blue-600',
+    statusLabel: 'Đang hoạt động',
+    statusColor: 'text-green-600',
     action: '/resources/upload',
     illustration: 'https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=900&q=80',
   },
@@ -174,18 +174,6 @@ const TutorHomePage = () => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-        <div className="flex items-center justify-center gap-2">
-          {[1, 2, 3].map((page) => (
-            <button
-              key={page}
-              className={`w-8 h-8 rounded-full border text-sm ${
-                page === 1 ? 'bg-black text-white' : 'hover:bg-gray-100'
-              }`}
-            >
-              {page}
-            </button>
           ))}
         </div>
       </section>
