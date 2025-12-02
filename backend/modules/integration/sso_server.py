@@ -21,7 +21,9 @@ MOCK_USERS = {
     "admin":   { "sso_id": "u3", "name": "Lê Trọng Tín", "email": "admin@hcmut.edu.vn", "role": "ADMIN", "password": "admin" },
     
     "officer": { "sso_id": "u4", "name": "Mai Đức Trung", "email": "mai.trung@hcmut.edu.vn", "role": "OFFICER", "password": "123" },
-    "dept":    { "sso_id": "u5", "name": "Quản Thành Thơ", "email": "thothanhquan@hcmut.edu.vn", "role": "DEPARTMENT", "password": "123" }
+    "dept":    { "sso_id": "u5", "name": "Quản Thành Thơ", "email": "thothanhquan@hcmut.edu.vn", "role": "DEPARTMENT", "password": "123" },
+    "university_officer":    { "sso_id": "u6", "name": "Trần Ngọc Bảo Duy", "email": "duy.bao@hcmut.edu.vn", "role": "UNIVERSITY_OFFICER", "password": "123" }
+
 }
 
 active_codes = {}

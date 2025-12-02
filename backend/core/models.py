@@ -98,7 +98,12 @@ class User:
     email: str
     password: str
     role: any 
-    
+
+    # Academic fields (used by Department to record student results)
+    score: Optional[float] = None
+    conduct_points: Optional[float] = None
+    scholarship_level: Optional[str] = None
+
     booked_appointments: List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -128,6 +133,10 @@ class Appointment:
     max_slot: int = 1
     status: str = "OPEN"
     current_slots: List[str] = field(default_factory=list)
+    # Optional list of feedback entries submitted by students (each is a dict)
+    feedback: List[dict] = field(default_factory=list)
+    # Optional report data summarizing the session (attendance, room, notes, etc.)
+    report: Optional[dict] = None
 
     def to_dict(self) -> dict:
         return asdict(self)

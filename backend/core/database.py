@@ -37,11 +37,26 @@ def init_db():
     u2 = User(id="u2", name="Duy Khang", email="student@hcmut.edu.vn", password=_hash("123"), role="STUDENT")
     u3 = User(id="u3", name="Tín", email="admin@hcmut.edu.vn", password=_hash("admin"), role="ADMIN")
 
+    u4 = User(id="u4", name="Mai Đức Trung", email="mai.trung@hcmut.edu.vn", password=_hash("123"), role="OFFICER")
+    u5 = User(id="u5", name="Quản Thành Thơ", email="thothanhquan@hcmut.edu.vn", password=_hash("123"), role="DEPARTMENT")
+    u6 = User(id="u6", name="Trần Ngọc Bảo Duy", email="duy.bao@hcmut.edu.vn", password=_hash("123"), role="UNIVERSITY_OFFICER")
+    
+
     db["users"] = {
         u1.id: asdict(u1),
         u2.id: asdict(u2),
         u3.id: asdict(u3),
+        u4.id: asdict(u4),
+        u5.id: asdict(u5),
+        u6.id: asdict(u6),
     }
+
+    # Seed academic fields for students
+    db["users"][u2.id]["score"] = 7.5
+    db["users"][u2.id]["conduct_points"] = 8.0
+    db["users"][u2.id]["scholarship_level"] = "NONE"
+    # Mark sample student as booked for seeded appointments
+    db["users"][u2.id]["booked_appointments"] = ["a1", "a2"]
 
     u_nva = User(
         id="u_nva", 
@@ -62,7 +77,14 @@ def init_db():
         end_time="2025-11-26 11:00:00",
         place="H6-304",
         max_slot=5,
-        status="OPEN"
+        current_slots=["u2"],
+        status="OPEN",
+        report={
+            "present": 5,
+            "capacity": 5,
+            "room": "H6-304",
+            "notes": "Buổi luyện thi, sĩ số đầy đủ"
+        }
     )
     # Lưu a1 vào DB (Dùng key id để không bị ghi đè)
     db["appointments"][a1.id] = asdict(a1) 
@@ -76,7 +98,14 @@ def init_db():
         end_time="2025-12-06 16:00:00",
         place="H6-304",
         max_slot=5,
-        status="OPEN"
+        current_slots=["u2"],
+        status="OPEN",
+        report={
+            "present": 4,
+            "capacity": 5,
+            "room": "H6-304",
+            "notes": "Vắng 1 sinh viên"
+        }
     )
     # Lưu a2 vào DB
     db["appointments"][a2.id] = asdict(a2)
@@ -89,7 +118,14 @@ def init_db():
         end_time="2025-12-05 16:00:00",
         place="Phòng H6-301",
         max_slot=10,
-        status="OPEN"
+        current_slots=[],
+        status="OPEN",
+        report={
+            "present": 8,
+            "capacity": 10,
+            "room": "H6-301",
+            "notes": "Buổi họp nghiên cứu, thảo luận dự án"
+        }
     )
     db["appointments"][a_nva.id] = asdict(a_nva)
 
@@ -101,7 +137,14 @@ def init_db():
         end_time="2025-12-06 16:00:00",
         place="Phòng H6-301",
         max_slot=90,
-        status="OPEN"
+        current_slots=[],
+        status="OPEN",
+        report={
+            "present": 60,
+            "capacity": 90,
+            "room": "H6-301",
+            "notes": "Buổi học quy mô lớn"
+        }
     )
     db["appointments"][a_nvb.id] = asdict(a_nvb)
 
@@ -214,11 +257,23 @@ def _next_user_id() -> str:
         idx += 1
 
 
-def create_user(name: str, email: str, password: str, role: str = "PENDING") -> dict:
-    """Create a new user (returns the created user dict). Raises ValueError if email exists."""
+def create_user(name: str, email: str, password: str, role: str = "PENDING", id: Optional[str] = None) -> dict:
+    """Create a new user (returns the created user dict). Raises ValueError if email exists.
+
+    Accept optional `id` to allow creating users with externally-provided IDs
+    (used by SSO / data-sync integrations). If `id` is not provided, a new
+    unique id will be generated.
+    """
     if get_user_by_email(email) is not None:
         raise ValueError("Email already exists")
-    uid = _next_user_id()
+
+    if id:
+        uid = id
+        if uid in db["users"]:
+            raise ValueError("User id already exists")
+    else:
+        uid = _next_user_id()
+
     # hash password before storing
     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     user_obj = User(id=uid, name=name, email=email, password=hashed, role=role)
