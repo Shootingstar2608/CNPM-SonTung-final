@@ -50,6 +50,11 @@ const Header = () => {
       : 'text-gray-900 hover:text-blue-600 py-5 font-medium cursor-pointer transition-colors';
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -143,9 +148,12 @@ const Header = () => {
                       
                       <div className="border-t border-gray-100 my-1"></div>
                       
-                      <a href="#" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                      <button
+                        onClick={() => { setIsDropdownOpen(false); handleLogout(); }}
+                        className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium w-full text-left"
+                      >
                         <LogOut size={16} className="mr-3"/> Đăng xuất
-                      </a>
+                      </button>
                     </div>
                   </>
                 )}
