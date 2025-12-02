@@ -156,7 +156,7 @@ const SessionInfoPage = () => {
         
         const data = await res.json();
 
-        if (res.ok) {
+        if (bookRes.ok) {
             setStatusModal({ 
                 isOpen: true, 
                 type: 'success', 

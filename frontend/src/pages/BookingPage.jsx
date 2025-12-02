@@ -111,6 +111,7 @@ const BookingPage = () => {
                 Đóng
             </button>
         </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-6">Đặt lịch Tutor</h1>
 
         <div className="bg-gray-100 rounded-xl p-8 min-h-[500px]">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
