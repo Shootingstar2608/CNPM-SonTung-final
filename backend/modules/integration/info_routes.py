@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, g, current_app
 from core.database import db
-from core.security import require_login
+from core.security import require_login, require_role
 from datetime import datetime
 
 bp = Blueprint('info', __name__, url_prefix='/info')
@@ -122,6 +122,55 @@ def submit_feedback(appt_id):
     db['appointments'][appt_id] = appt
 
     return jsonify({'feedback': feedback_entry}), 201
+
+
+@bp.route('/feedbacks/all', methods=['GET'])
+@require_role('UNIVERSITY_OFFICER')
+def get_all_feedbacks():
+    """
+    UNIVERSITY_OFFICER xem tất cả feedbacks từ mọi appointments.
+    Trả về danh sách feedbacks với thông tin appointment và student.
+    """
+    all_feedbacks = []
+    
+    for appt_id, appt in db.get('appointments', {}).items():
+        feedbacks = appt.get('feedback', [])
+        if not feedbacks:
+            continue
+            
+        for fb in feedbacks:
+            student_id = fb.get('student_id')
+            student = db.get('users', {}).get(student_id, {})
+            student_name = student.get('name', 'Unknown')
+            student_email = student.get('email', 'N/A')
+            
+            # Lấy thông tin tutor
+            tutor_id = appt.get('tutor_id')
+            tutor = db.get('users', {}).get(tutor_id, {})
+            tutor_name = tutor.get('name', 'Unknown')
+            
+            all_feedbacks.append({
+                'feedback_id': f"{appt_id}_{student_id}_{fb.get('created_at', '')}",
+                'appointment_id': appt_id,
+                'appointment_name': appt.get('name', 'N/A'),
+                'start_time': appt.get('start_time', 'N/A'),
+                'place': appt.get('place', 'N/A'),
+                'tutor_name': tutor_name,
+                'student_id': student_id,
+                'student_name': student_name,
+                'student_email': student_email,
+                'rating': fb.get('rating'),
+                'comment': fb.get('comment', ''),
+                'created_at': fb.get('created_at', '')
+            })
+    
+    # Sort by created_at desc
+    all_feedbacks.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    
+    return jsonify({
+        'count': len(all_feedbacks),
+        'feedbacks': all_feedbacks
+    }), 200
 
 
 @bp.route('/documents', methods=['GET'])

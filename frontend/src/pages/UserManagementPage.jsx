@@ -5,31 +5,60 @@ import { Search, ChevronLeft, ChevronRight, User, Calendar, RefreshCcw, Save } f
 import StatusModal from '../components/StatusModal';
 
 const UserManagementPage = () => {
-  const [activeTab, setActiveTab] = useState('auto-sync'); // 'auto-sync' | 'auto-role' | 'manual'
+  const [activeTab, setActiveTab] = useState('manual');
   const [isAutoSyncOn, setIsAutoSyncOn] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // --- 1. DỮ LIỆU GIẢ LẬP (DATABASE) ---
-  const initialUsers = [
-    { id: '2311123', name: 'Nguyễn Văn A', dob: '08/02/2005', email: 'a.nguyen@hcmut.edu.vn', role: 'Sinh viên', link: 'Lần cuối vào 01/11/2025' },
-    { id: '2111212', name: 'Trần Thị B', dob: '15/05/2003', email: 'b.tran@hcmut.edu.vn', role: 'Tutor', link: 'Lần cuối vào 02/11/2025' },
-    { id: 'MSCB001', name: 'Lê Văn C', dob: '20/10/1980', email: 'c.le@hcmut.edu.vn', role: 'Khoa / Bộ môn', link: 'Lần cuối vào 03/11/2025' },
-    { id: 'MSCB002', name: 'Phạm Thị D', dob: '12/12/1985', email: 'd.pham@hcmut.edu.vn', role: 'Phòng ĐT / CTSV', link: 'Lần cuối vào 04/11/2025' },
-  ];
-
-  // State quản lý danh sách người dùng
-  const [users, setUsers] = useState(initialUsers);
-  const [displayedUsers, setDisplayedUsers] = useState(initialUsers);
+  // State quản lý danh sách người dùng (fetch từ API)
+  const [users, setUsers] = useState([]);
+  const [displayedUsers, setDisplayedUsers] = useState([]);
 
   // State form tạo mới
   const [newUser, setNewUser] = useState({
-    id: '', name: '', dob: '', email: '', role: 'Sinh viên'
+    id: '', name: '', dob: '', email: '', role: 'PENDING'
   });
 
   // State Modal
   const [statusModal, setStatusModal] = useState({
     isOpen: false, type: 'success', title: '', message: '', confirmText: 'OK', onConfirm: null
   });
+
+  // Fetch users từ API khi component mount
+  React.useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('http://127.0.0.1:5000/admin/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const formattedUsers = data.users.map(u => ({
+          id: u.id,
+          name: u.name,
+          dob: '---',
+          email: u.email,
+          role: u.role || 'PENDING',
+          link: 'N/A'
+        }));
+        setUsers(formattedUsers);
+        setDisplayedUsers(formattedUsers);
+      } else {
+        setStatusModal({ isOpen: true, type: 'error', title: 'Lỗi', message: 'Không thể tải danh sách người dùng' });
+      }
+    } catch (e) {
+      console.error(e);
+      setStatusModal({ isOpen: true, type: 'error', title: 'Lỗi', message: 'Lỗi kết nối server' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // --- LOGIC: TÌM KIẾM ---
   const handleSearch = () => {
@@ -67,32 +96,48 @@ const UserManagementPage = () => {
 
   // --- LOGIC: TẠO MỚI NGƯỜI DÙNG ---
   const handleCreateUser = () => {
-    // 1. Validate Rỗng
-    if (!newUser.id || !newUser.name) {
-        setStatusModal({ isOpen: true, type: 'error', title: 'Failed', message: 'Vui lòng nhập MSSV/MSCB và Họ tên!', confirmText: 'Thoát' });
-        return;
+    setStatusModal({
+      isOpen: true,
+      type: 'error',
+      title: 'Thông báo',
+      message: 'Vui lòng yêu cầu người dùng tự đăng ký qua trang /register. Admin chỉ phân quyền, không tạo user.',
+      confirmText: 'OK'
+    });
+  };
+
+  // --- LOGIC: CẬP NHẬT ROLE ---
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('http://127.0.0.1:5000/admin/grant-role', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: userId, role: newRole })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        setStatusModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Thành công',
+          message: `Đã cập nhật quyền ${newRole} cho user ${userId}`,
+          onConfirm: () => {
+            setStatusModal({ ...statusModal, isOpen: false });
+            fetchUsers();
+          }
+        });
+      } else {
+        setStatusModal({ isOpen: true, type: 'error', title: 'Lỗi', message: data.error || 'Không thể cập nhật role' });
+      }
+    } catch (e) {
+      console.error(e);
+      setStatusModal({ isOpen: true, type: 'error', title: 'Lỗi', message: 'Lỗi kết nối server' });
     }
-    // 2. Validate Trùng ID
-    if (users.some(u => u.id.toLowerCase() === newUser.id.trim().toLowerCase())) {
-        setStatusModal({ isOpen: true, type: 'error', title: 'Trùng dữ liệu', message: `Mã số "${newUser.id}" đã tồn tại!`, confirmText: 'Thoát' });
-        return;
-    }
-
-    // 3. Tạo mới
-    const createdUser = {
-        ...newUser,
-        id: newUser.id.trim(),
-        dob: newUser.dob || '01/01/2000',
-        email: newUser.email || `${newUser.name.toLowerCase().replace(/\s/g, '')}@hcmut.edu.vn`,
-        link: 'Vừa tạo xong'
-    };
-
-    const updatedList = [...users, createdUser];
-    setUsers(updatedList);
-    setDisplayedUsers(updatedList);
-    setNewUser({ id: '', name: '', dob: '', email: '', role: 'Sinh viên' }); // Reset form
-
-    setStatusModal({ isOpen: true, type: 'success', title: 'Success', message: 'Thêm người dùng thành công!', confirmText: 'OK' });
   };
 
   // --- RENDER TAB 1: ĐỒNG BỘ TỰ ĐỘNG ---
@@ -259,7 +304,11 @@ const UserManagementPage = () => {
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-                {displayedUsers.length > 0 ? (
+                {loading ? (
+                <tr className="bg-white h-20">
+                    <td colSpan="6" className="text-center text-gray-400 italic">Đang tải dữ liệu...</td>
+                </tr>
+                ) : displayedUsers.length > 0 ? (
                 displayedUsers.map((user, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-600">{user.id}</td>
@@ -267,11 +316,18 @@ const UserManagementPage = () => {
                     <td className="px-4 py-3 text-gray-600">{user.dob}</td>
                     <td className="px-4 py-3 text-gray-600">{user.email}</td>
                     <td className="px-4 py-3 text-center">
-                        <select defaultValue={user.role} className="px-2 py-1 border border-gray-300 rounded text-xs focus:border-blue-500 cursor-pointer">
-                            <option>Sinh viên</option>
-                            <option>Tutor</option>
-                            <option>Phòng ĐT / CTSV</option>
-                            <option>Khoa / Bộ môn</option>
+                        <select 
+                            value={user.role} 
+                            onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded text-xs focus:border-blue-500 cursor-pointer"
+                        >
+                            <option value="PENDING">PENDING</option>
+                            <option value="STUDENT">STUDENT</option>
+                            <option value="TUTOR">TUTOR</option>
+                            <option value="OFFICER">OFFICER</option>
+                            <option value="DEPARTMENT">DEPARTMENT</option>
+                            <option value="UNIVERSITY_OFFICER">UNIVERSITY_OFFICER</option>
+                            <option value="ADMIN">ADMIN</option>
                         </select>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-400 text-xs italic">{user.link}</td>
@@ -286,8 +342,17 @@ const UserManagementPage = () => {
             </table>
         </div>
 
-        {/* Tạo mới người dùng */}
-        <div id="create-user-section">
+        {/* Thông báo về registration */}
+        <div id="create-user-section" className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+            <h3 className="font-bold text-gray-800 mb-2 text-sm">💡 Hướng dẫn thêm người dùng</h3>
+            <p className="text-gray-600 text-sm mb-4">Admin không tạo user trực tiếp. Người dùng tự đăng ký qua <strong>/register</strong>, sau đó Admin phân quyền tại đây.</p>
+            <button onClick={fetchUsers} className="px-4 py-2 bg-blue-600 text-white font-bold rounded text-sm hover:bg-blue-700">
+                🔄 Refresh danh sách
+            </button>
+        </div>
+
+        {/* Form cũ - ẩn đi */}
+        <div id="old-create-form" className="hidden">
             <h3 className="font-bold text-gray-800 mb-4 text-sm">Tạo mới người dùng</h3>
             <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/30">
                 <div className="grid grid-cols-6 gap-4 text-xs font-bold text-gray-500 mb-2 px-2">

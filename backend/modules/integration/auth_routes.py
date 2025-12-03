@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, g, redirect
 import os
 from modules.integration.services import AuthService
 from core.security import require_login
-from core.database import db # <--- Nhớ import db
+from core.database import db, create_user
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 auth_service = AuthService()
@@ -86,3 +86,57 @@ def list_tutors():
             })
             
     return jsonify(tutors_list), 200
+
+@bp.route('/register', methods=['POST'])
+def register():
+    """Đăng ký tài khoản mới (chưa có role - PENDING)"""
+    data = request.get_json() or {}
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not name or not email or not password:
+        return jsonify({'error': 'Cần có name, email và password'}), 400
+    
+    try:
+        # Tạo user với role PENDING (chưa có quyền gì)
+        user = create_user(name=name, email=email, password=password, role='PENDING')
+        return jsonify({
+            'message': 'Đăng ký thành công! Vui lòng đợi admin phê duyệt.',
+            'user': {
+                'id': user['id'],
+                'name': user['name'],
+                'email': user['email'],
+                'role': user['role']
+            }
+        }), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Lỗi server khi đăng ký'}), 500
+
+@bp.route('/verify-credentials', methods=['POST'])
+def verify_credentials():
+    """Verify email/password cho SSO server (internal endpoint)"""
+    from core.database import authenticate, get_user_by_email
+    
+    data = request.get_json() or {}
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'error': 'Missing credentials'}), 400
+    
+    # Authenticate using bcrypt
+    user_id = authenticate(email, password)
+    
+    if user_id:
+        user = get_user_by_email(email)
+        return jsonify({
+            'user_id': user['id'],
+            'name': user['name'],
+            'email': user['email'],
+            'role': user.get('role', 'PENDING')
+        }), 200
+    else:
+        return jsonify({'error': 'Invalid credentials'}), 401
