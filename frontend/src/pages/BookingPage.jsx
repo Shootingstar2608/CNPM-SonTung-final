@@ -29,9 +29,6 @@ const BookingPage = () => {
         if (res.ok) {
           const data = await res.json();
           
-          // --- LOGIC LỌC MỚI ---
-          // 1. Phải là trạng thái OPEN
-          // 2. ID của mình KHÔNG được nằm trong current_slots (tức là chưa đăng ký)
           const availableSlots = data.filter(apt => {
              const isOpen = apt.status === 'OPEN';
              const isNotBookedByMe = !apt.current_slots || !apt.current_slots.includes(currentUserId);
@@ -78,6 +75,10 @@ const BookingPage = () => {
       }
     } catch (e) {
       console.error(e);
+      setStatusModal({
+        isOpen: true, type: 'error', title: 'Lỗi',
+        message: 'Đã xảy ra lỗi khi đặt lịch. Vui lòng thử lại.'
+      });
     }
   };
 
@@ -100,10 +101,8 @@ const BookingPage = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* HEADER CÓ NÚT ĐÓNG */}
         <div className="flex justify-between items-center mb-6">
             <h1 className="text-xl font-bold text-gray-900">Đặt lịch Tutor</h1>
-            {/* NÚT ĐÓNG MỚI (GÓC PHẢI) */}
             <button 
                 onClick={() => navigate('/meetings', { state: { activeTab: 'booking' } })}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm"
@@ -111,7 +110,6 @@ const BookingPage = () => {
                 Đóng
             </button>
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-6">Đặt lịch Tutor</h1>
 
         <div className="bg-gray-100 rounded-xl p-8 min-h-[500px]">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -133,19 +131,14 @@ const BookingPage = () => {
                             
                             return (
                                 <div key={item.id} className="flex flex-wrap items-center justify-between py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors px-2 rounded">
-                                    {/* Cột MỚI: Tên buổi hẹn */}
                                     <div className="w-1/4"><span className="block text-gray-500 text-xs font-bold uppercase">Chủ đề</span><span className="text-blue-700 text-sm font-bold">{item.name}</span></div>
                                     
-                                    {/* Cột Ngày (Chỉnh width từ w-1/5 thành w-1/6) */}
                                     <div className="w-1/6"><span className="block text-gray-500 text-xs font-bold uppercase">Ngày</span><span className="text-gray-800 text-sm font-medium">{start.date}</span></div>
                                     
-                                    {/* Cột Giờ bắt đầu (Chỉnh width từ w-1/5 thành w-1/6) */}
                                     <div className="w-1/6 text-center"><span className="block text-gray-500 text-xs font-bold uppercase">Giờ bắt đầu</span><span className="text-gray-800 text-sm font-medium">{start.time}</span></div>
                                     
-                                    {/* Cột Thời gian (Chỉnh width từ w-1/5 thành w-1/6) */}
                                     <div className="w-1/6 text-center"><span className="block text-gray-500 text-xs font-bold uppercase">Thời gian</span><span className="text-gray-800 text-sm font-medium">{start.time} - {end.time}</span></div>
                                     
-                                    {/* Cột Action (Chỉnh width từ w-1/5 thành w-1/6) */}
                                     <div className="w-1/6 text-right">
                                         <button onClick={() => handleBook(item.id)} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded text-sm shadow-sm transition-colors">Xác Nhận</button>
                                     </div>

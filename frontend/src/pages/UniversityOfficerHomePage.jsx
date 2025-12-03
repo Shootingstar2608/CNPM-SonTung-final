@@ -72,6 +72,7 @@ const UniversityOfficerHomePage = () => {
             <button className="text-sm font-semibold py-1 text-blue-600 border-b-2 border-blue-600">Trang chủ</button>
             <button onClick={() => setInfoOpen(true)} className="text-sm font-semibold py-1 text-gray-700 hover:text-blue-600">Thông tin</button>
             <button onClick={() => navigate('/session-reports')} className="text-sm font-semibold py-1 text-gray-700 hover:text-blue-600">Báo cáo buổi học</button>
+            <button onClick={() => navigate('/feedback-reports')} className="text-sm font-semibold py-1 text-gray-700 hover:text-blue-600">Phản hồi chất lượng</button>
           </nav>
           <div className="flex items-center gap-4">
             <Bell size={18} className="text-gray-500" />
@@ -102,7 +103,7 @@ const UniversityOfficerHomePage = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-sm text-gray-500 mt-4">Trang chủ</div>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="rounded-[20px] border border-gray-200 p-6 bg-white shadow-sm">
             <p className="text-sm text-gray-400">Users</p>
             <h3 className="text-2xl font-bold">{overview ? overview.users_count : '–'}</h3>
@@ -117,6 +118,14 @@ const UniversityOfficerHomePage = () => {
             <p className="text-sm text-gray-400">Documents</p>
             <h3 className="text-2xl font-bold">{overview ? overview.documents_count : '–'}</h3>
             <p className="text-sm text-gray-600 mt-2">Tài liệu học tập có sẵn</p>
+          </div>
+          <div 
+            onClick={() => navigate('/feedback-reports')}
+            className="rounded-[20px] border border-blue-200 p-6 bg-gradient-to-br from-blue-50 to-white shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <p className="text-sm text-blue-600 font-semibold">📊 Phản hồi</p>
+            <h3 className="text-2xl font-bold text-blue-700">Xem báo cáo</h3>
+            <p className="text-sm text-gray-600 mt-2">Phản hồi chất lượng buổi học</p>
           </div>
         </div>
       </section>

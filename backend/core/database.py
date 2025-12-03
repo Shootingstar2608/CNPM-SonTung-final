@@ -34,7 +34,7 @@ def init_db():
         return bcrypt.hashpw(pw.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     u1 = User(id="u1", name="Đỗ Hồng Phúc", email="tutor@hcmut.edu.vn", password=_hash("123"), role="TUTOR")
-    u2 = User(id="u2", name="Duy Khang", email="student@hcmut.edu.vn", password=_hash("123"), role="STUDENT")
+    u2 = User(id="u2", name="Duy Khang", email="student@hcmut.edu.vn", password=_hash("456"), role="STUDENT")
     u3 = User(id="u3", name="Tín", email="admin@hcmut.edu.vn", password=_hash("admin"), role="ADMIN")
 
     u4 = User(id="u4", name="Mai Đức Trung", email="mai.trung@hcmut.edu.vn", password=_hash("123"), role="OFFICER")

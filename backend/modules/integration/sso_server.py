@@ -1,20 +1,15 @@
 # sso_server.py
 from flask import Flask, request, jsonify, redirect
 import os
+import requests
 
-# Try to use the app's in-memory DB for credential verification when available
-try:
-    from core.database import init_db, authenticate, get_user_by_email
-    # initialize sample data for the mock SSO (safe to call)
-    init_db()
-    USING_APP_DB = True
-except Exception:
-    USING_APP_DB = False
-from datetime import datetime, timedelta
-import uuid
+# SSO Server giờ sẽ gọi API của backend app để verify credentials
+# thay vì dùng database riêng
+BACKEND_VERIFY_URL = os.environ.get('BACKEND_URL', 'http://127.0.0.1:5000') + '/auth/verify-credentials'
 
 app = Flask(__name__)
 
+# Mock users chỉ để fallback (nếu backend không available)
 MOCK_USERS = {
     "student": { "sso_id": "u2", "name": "Bùi Trần Duy Khang", "email": "student@hcmut.edu.vn", "role": "STUDENT", "password": "456" },
     "tutor":   { "sso_id": "u1", "name": "Đỗ Hồng Phúc", "email": "tutor@hcmut.edu.vn", "role": "TUTOR", "password": "123" },
@@ -25,6 +20,9 @@ MOCK_USERS = {
     "university_officer":    { "sso_id": "u6", "name": "Trần Ngọc Bảo Duy", "email": "duy.bao@hcmut.edu.vn", "role": "UNIVERSITY_OFFICER", "password": "123" }
 
 }
+
+from datetime import datetime, timedelta
+import uuid
 
 active_codes = {}
 
@@ -98,28 +96,36 @@ def login_action():
 
     user_info = None
 
-    # Try app DB authentication first (if available)
-    if USING_APP_DB:
-        uid = authenticate(email, password)
-        if uid:
-            u = get_user_by_email(email)
+    # Try to verify credentials via backend API (real-time check)
+    try:
+        response = requests.post(BACKEND_VERIFY_URL, json={
+            'email': email,
+            'password': password
+        }, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
             user_info = {
-                'sso_id': u.get('id'),
-                'name': u.get('name'),
-                'email': u.get('email'),
-                'role': u.get('role', 'STUDENT')
+                'sso_id': data.get('user_id'),
+                'name': data.get('name'),
+                'email': data.get('email'),
+                'role': data.get('role', 'STUDENT')
             }
-        else:
+            print(f"[SSO] Authenticated via backend API: {email}")
+        elif response.status_code == 401:
             return "Invalid credentials", 401
-    else:
-        # fallback to MOCK_USERS by email
+        else:
+            raise Exception(f"Backend returned {response.status_code}")
+    except Exception as e:
+        print(f"[SSO] Backend API unavailable ({e}), falling back to MOCK_USERS")
+        # Fallback to MOCK_USERS if backend is down
         found = None
         for k, v in MOCK_USERS.items():
             if v.get('email') == email:
                 found = v
                 break
         if found:
-            # Verify mock password (do not accept any password)
+            # Verify mock password
             expected_pw = found.get('password')
             if expected_pw is None:
                 print(f"[SSO] Mock user {email} has no password set; rejecting login")
@@ -130,6 +136,9 @@ def login_action():
             user_info = found
         else:
             return "Invalid credentials", 401
+    
+    if not user_info:
+        return "Invalid credentials", 401
 
     clean_expired_codes()
     code = f"auth_{uuid.uuid4().hex[:8]}"

@@ -15,64 +15,31 @@ const FeedbackPage = () => {
     const userId = localStorage.getItem('user_id');
     const API_BASE = 'http://127.0.0.1:5000';
 
-    // Try protected endpoint first (works when JWT present). Otherwise fall back to public appointments and filter by local user_id.
-    fetch(`${API_BASE}/info/appointments/mine`, {
-      headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          // fallback to public appointments
-          throw new Error('protected-failed');
-        }
-        const d = await r.json();
-        return d.appointments || [];
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch all appointments và filter những buổi mà student đã đăng ký
+    fetch(`${API_BASE}/appointments/`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Cannot fetch appointments');
+        const data = await res.json();
+        const all = Array.isArray(data) ? data : (data.appointments || []);
+        
+        // Chỉ lấy appointments mà userId có trong current_slots (đã đăng ký)
+        const myAppointments = all.filter((a) => {
+          return (a.current_slots || []).includes(userId);
+        });
+        
+        setAppointments(myAppointments);
       })
-      .catch(async () => {
-        try {
-          // attempt public endpoint (the backend exposes /appointments/)
-          const res = await fetch(`${API_BASE}/appointments/`);
-          const data = await res.json();
-          const all = Array.isArray(data) ? data : (data.appointments || []);
-          if (userId) {
-            return all.filter((a) => (a.current_slots || []).includes(userId) || (dbUserHasBooked(a.id, userId)));
-          }
-          return [];
-        } catch (e) {
-          console.error('fallback fetch failed', e);
-          return [];
-        }
+      .catch((e) => {
+        console.error('Error fetching appointments:', e);
+        setAppointments([]);
       })
-        .then(async (list) => {
-          // If user has no personal appointments, force one demo appointment from the DB
-          if (!list || list.length === 0) {
-            try {
-              const res = await fetch(`${API_BASE}/appointments/`);
-              const data = await res.json();
-              const all = Array.isArray(data) ? data : (data.appointments || []);
-              if (all && all.length > 0) {
-                // pick the first seeded appointment as demo
-                const demo = all[0];
-                // annotate so UI can show it's a demo-provided session
-                demo.__demo = true;
-                setAppointments([demo]);
-                return;
-              }
-            } catch (e) {
-              console.error('failed to load demo appointment', e);
-            }
-          }
-          setAppointments(list);
-        })
-      .catch((e) => console.error(e))
       .finally(() => setLoading(false));
   }, []);
-
-  // Helper for client-side check: some backends store booked_appointments under users; we cannot access server DB here,
-  // so this function is a small placeholder used in the filter above (keeps code consistent). In practice the check is
-  // the current_slots inclusion which is sufficient for seeded data.
-  function dbUserHasBooked(apptId, userId) {
-    return false;
-  }
 
   const openFeedback = (appt) => {
     setSelected(appt);
