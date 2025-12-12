@@ -149,6 +149,21 @@ def init_db():
     )
     db["appointments"][a_nvb.id] = asdict(a_nvb)
 
+    # Buổi trong tuần tới cho chatbot test
+    a3 = Appointment(
+        id="a3", 
+        tutor_id="u1", 
+        name="Dạy làm giàu",
+        start_time="2025-12-16 09:00:00",
+        end_time="2025-12-16 11:00:00",
+        place="H3-403",
+        max_slot=5,
+        current_slots=["u2"],  # Student u2 đã đăng ký
+        status="OPEN",
+        report=None
+    )
+    db["appointments"][a3.id] = asdict(a3)
+
     # --------------------
     # --- TÍN THÊM DỮ LIỆU MẪU CHO MODULE 3 - DOCUMENTS ---
     # --- 3. DOCUMENTS (Sinh tự động 40+ tài liệu) ---

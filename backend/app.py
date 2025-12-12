@@ -12,6 +12,7 @@ from modules.integration.library_routes import bp as library_bp
 from modules.integration.data_sync_routes import bp as data_sync_bp
 from modules.integration.admin_routes import bp as admin_bp
 from modules.integration.info_routes import bp as info_bp
+from modules.chatbot.routes import chatbot_bp
 
 def create_app(init_scheduler=True):
     app = Flask(__name__)
@@ -32,6 +33,7 @@ def create_app(init_scheduler=True):
     app.register_blueprint(data_sync_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(info_bp)
+    app.register_blueprint(chatbot_bp)
     
     return app
 
